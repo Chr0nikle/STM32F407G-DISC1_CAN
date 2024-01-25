@@ -1,0 +1,1759 @@
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"CANSPI.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "Core/Src/CANSPI.c"
+  20              		.section	.text.convertReg2ExtendedCANid,"ax",%progbits
+  21              		.align	1
+  22              		.syntax unified
+  23              		.thumb
+  24              		.thumb_func
+  26              	convertReg2ExtendedCANid:
+  27              	.LVL0:
+  28              	.LFB142:
+   1:Core/Src/CANSPI.c **** /*
+   2:Core/Src/CANSPI.c ****     (c) 2016 Microchip Technology Inc. and its subsidiaries. You may use this
+   3:Core/Src/CANSPI.c ****     software and any derivatives exclusively with Microchip products.
+   4:Core/Src/CANSPI.c **** 
+   5:Core/Src/CANSPI.c ****     THIS SOFTWARE IS SUPPLIED BY MICROCHIP "AS IS". NO WARRANTIES, WHETHER
+   6:Core/Src/CANSPI.c ****     EXPRESS, IMPLIED OR STATUTORY, APPLY TO THIS SOFTWARE, INCLUDING ANY IMPLIED
+   7:Core/Src/CANSPI.c ****     WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A
+   8:Core/Src/CANSPI.c ****     PARTICULAR PURPOSE, OR ITS INTERACTION WITH MICROCHIP PRODUCTS, COMBINATION
+   9:Core/Src/CANSPI.c ****     WITH ANY OTHER PRODUCTS, OR USE IN ANY APPLICATION.
+  10:Core/Src/CANSPI.c **** 
+  11:Core/Src/CANSPI.c ****     IN NO EVENT WILL MICROCHIP BE LIABLE FOR ANY INDIRECT, SPECIAL, PUNITIVE,
+  12:Core/Src/CANSPI.c ****     INCIDENTAL OR CONSEQUENTIAL LOSS, DAMAGE, COST OR EXPENSE OF ANY KIND
+  13:Core/Src/CANSPI.c ****     WHATSOEVER RELATED TO THE SOFTWARE, HOWEVER CAUSED, EVEN IF MICROCHIP HAS
+  14:Core/Src/CANSPI.c ****     BEEN ADVISED OF THE POSSIBILITY OR THE DAMAGES ARE FORESEEABLE. TO THE
+  15:Core/Src/CANSPI.c ****     FULLEST EXTENT ALLOWED BY LAW, MICROCHIP'S TOTAL LIABILITY ON ALL CLAIMS IN
+  16:Core/Src/CANSPI.c ****     ANY WAY RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT OF FEES, IF ANY,
+  17:Core/Src/CANSPI.c ****     THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
+  18:Core/Src/CANSPI.c **** 
+  19:Core/Src/CANSPI.c ****     MICROCHIP PROVIDES THIS SOFTWARE CONDITIONALLY UPON YOUR ACCEPTANCE OF THESE
+  20:Core/Src/CANSPI.c ****     TERMS.
+  21:Core/Src/CANSPI.c **** */
+  22:Core/Src/CANSPI.c **** 
+  23:Core/Src/CANSPI.c **** #include "CANSPI.h"
+  24:Core/Src/CANSPI.c **** #include "MCP2515.h"
+  25:Core/Src/CANSPI.c **** 
+  26:Core/Src/CANSPI.c **** /** Local Function Prototypes */  
+  27:Core/Src/CANSPI.c **** static uint32_t convertReg2ExtendedCANid(uint8_t tempRXBn_EIDH, uint8_t tempRXBn_EIDL, uint8_t temp
+  28:Core/Src/CANSPI.c **** static uint32_t convertReg2StandardCANid(uint8_t tempRXBn_SIDH, uint8_t tempRXBn_SIDL) ;
+  29:Core/Src/CANSPI.c **** static void convertCANid2Reg(uint32_t tempPassedInID, uint8_t canIdType, id_reg_t *passedIdReg);
+  30:Core/Src/CANSPI.c **** 
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 2
+
+
+  31:Core/Src/CANSPI.c **** /** Local Variables */ 
+  32:Core/Src/CANSPI.c **** ctrl_status_t ctrlStatus;
+  33:Core/Src/CANSPI.c **** ctrl_error_status_t errorStatus;
+  34:Core/Src/CANSPI.c **** id_reg_t idReg;
+  35:Core/Src/CANSPI.c **** 
+  36:Core/Src/CANSPI.c **** /** CAN SPI APIs */ 
+  37:Core/Src/CANSPI.c **** 
+  38:Core/Src/CANSPI.c **** /* Entering Sleep Mode */
+  39:Core/Src/CANSPI.c **** void CANSPI_Sleep(void)
+  40:Core/Src/CANSPI.c **** {
+  41:Core/Src/CANSPI.c ****   /* Clear CAN bus wakeup interrupt */
+  42:Core/Src/CANSPI.c ****   MCP2515_BitModify(MCP2515_CANINTF, 0x40, 0x00);        
+  43:Core/Src/CANSPI.c ****   
+  44:Core/Src/CANSPI.c ****   /* Enable CAN bus activity wakeup */
+  45:Core/Src/CANSPI.c ****   MCP2515_BitModify(MCP2515_CANINTE, 0x40, 0x40);        
+  46:Core/Src/CANSPI.c ****   
+  47:Core/Src/CANSPI.c ****   MCP2515_SetSleepMode();
+  48:Core/Src/CANSPI.c **** }
+  49:Core/Src/CANSPI.c **** 
+  50:Core/Src/CANSPI.c **** /* Initialize CAN */
+  51:Core/Src/CANSPI.c **** bool CANSPI_Initialize(void)
+  52:Core/Src/CANSPI.c **** {
+  53:Core/Src/CANSPI.c ****   RXF0 RXF0reg;
+  54:Core/Src/CANSPI.c ****   RXF1 RXF1reg;
+  55:Core/Src/CANSPI.c ****   RXF2 RXF2reg;
+  56:Core/Src/CANSPI.c ****   RXF3 RXF3reg;
+  57:Core/Src/CANSPI.c ****   RXF4 RXF4reg;
+  58:Core/Src/CANSPI.c ****   RXF5 RXF5reg;
+  59:Core/Src/CANSPI.c ****   RXM0 RXM0reg;
+  60:Core/Src/CANSPI.c ****   RXM1 RXM1reg;
+  61:Core/Src/CANSPI.c ****       
+  62:Core/Src/CANSPI.c ****   /* Intialize Rx Mask values */
+  63:Core/Src/CANSPI.c ****   RXM0reg.RXM0SIDH = 0x00;
+  64:Core/Src/CANSPI.c ****   RXM0reg.RXM0SIDL = 0x00;
+  65:Core/Src/CANSPI.c ****   RXM0reg.RXM0EID8 = 0x00;
+  66:Core/Src/CANSPI.c ****   RXM0reg.RXM0EID0 = 0x00;
+  67:Core/Src/CANSPI.c ****   
+  68:Core/Src/CANSPI.c ****   RXM1reg.RXM1SIDH = 0x00;
+  69:Core/Src/CANSPI.c ****   RXM1reg.RXM1SIDL = 0x00;
+  70:Core/Src/CANSPI.c ****   RXM1reg.RXM1EID8 = 0x00;
+  71:Core/Src/CANSPI.c ****   RXM1reg.RXM1EID0 = 0x00;
+  72:Core/Src/CANSPI.c ****   
+  73:Core/Src/CANSPI.c ****   /* Intialize Rx Filter values */
+  74:Core/Src/CANSPI.c ****   RXF0reg.RXF0SIDH = 0x00;      
+  75:Core/Src/CANSPI.c ****   RXF0reg.RXF0SIDL = 0x00;      //Starndard Filter
+  76:Core/Src/CANSPI.c ****   RXF0reg.RXF0EID8 = 0x00;
+  77:Core/Src/CANSPI.c ****   RXF0reg.RXF0EID0 = 0x00;
+  78:Core/Src/CANSPI.c ****   
+  79:Core/Src/CANSPI.c ****   RXF1reg.RXF1SIDH = 0x00;
+  80:Core/Src/CANSPI.c ****   RXF1reg.RXF1SIDL = 0x08;      //Exntended Filter
+  81:Core/Src/CANSPI.c ****   RXF1reg.RXF1EID8 = 0x00;
+  82:Core/Src/CANSPI.c ****   RXF1reg.RXF1EID0 = 0x00;
+  83:Core/Src/CANSPI.c ****   
+  84:Core/Src/CANSPI.c ****   RXF2reg.RXF2SIDH = 0x00;
+  85:Core/Src/CANSPI.c ****   RXF2reg.RXF2SIDL = 0x00;
+  86:Core/Src/CANSPI.c ****   RXF2reg.RXF2EID8 = 0x00;
+  87:Core/Src/CANSPI.c ****   RXF2reg.RXF2EID0 = 0x00;
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 3
+
+
+  88:Core/Src/CANSPI.c ****   
+  89:Core/Src/CANSPI.c ****   RXF3reg.RXF3SIDH = 0x00;
+  90:Core/Src/CANSPI.c ****   RXF3reg.RXF3SIDL = 0x00;
+  91:Core/Src/CANSPI.c ****   RXF3reg.RXF3EID8 = 0x00;
+  92:Core/Src/CANSPI.c ****   RXF3reg.RXF3EID0 = 0x00;
+  93:Core/Src/CANSPI.c ****   
+  94:Core/Src/CANSPI.c ****   RXF4reg.RXF4SIDH = 0x00;
+  95:Core/Src/CANSPI.c ****   RXF4reg.RXF4SIDL = 0x00;
+  96:Core/Src/CANSPI.c ****   RXF4reg.RXF4EID8 = 0x00;
+  97:Core/Src/CANSPI.c ****   RXF4reg.RXF4EID0 = 0x00;
+  98:Core/Src/CANSPI.c ****   
+  99:Core/Src/CANSPI.c ****   RXF5reg.RXF5SIDH = 0x00;
+ 100:Core/Src/CANSPI.c ****   RXF5reg.RXF5SIDL = 0x08;
+ 101:Core/Src/CANSPI.c ****   RXF5reg.RXF5EID8 = 0x00;
+ 102:Core/Src/CANSPI.c ****   RXF5reg.RXF5EID0 = 0x00;
+ 103:Core/Src/CANSPI.c ****   
+ 104:Core/Src/CANSPI.c ****   /* Intialize MCP2515, check SPI */
+ 105:Core/Src/CANSPI.c ****   if(!MCP2515_Initialize())
+ 106:Core/Src/CANSPI.c ****   {
+ 107:Core/Src/CANSPI.c ****     return false;
+ 108:Core/Src/CANSPI.c ****   }
+ 109:Core/Src/CANSPI.c ****     
+ 110:Core/Src/CANSPI.c ****   /* Change mode as configuration mode */
+ 111:Core/Src/CANSPI.c ****   if(!MCP2515_SetConfigMode())
+ 112:Core/Src/CANSPI.c ****   {
+ 113:Core/Src/CANSPI.c ****     return false;
+ 114:Core/Src/CANSPI.c ****   }
+ 115:Core/Src/CANSPI.c ****   
+ 116:Core/Src/CANSPI.c ****   /* Configure filter & mask */
+ 117:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXM0SIDH, MCP2515_RXM0EID0, &(RXM0reg.RXM0SIDH));
+ 118:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXM1SIDH, MCP2515_RXM1EID0, &(RXM1reg.RXM1SIDH));
+ 119:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXF0SIDH, MCP2515_RXF0EID0, &(RXF0reg.RXF0SIDH));
+ 120:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXF1SIDH, MCP2515_RXF1EID0, &(RXF1reg.RXF1SIDH));
+ 121:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXF2SIDH, MCP2515_RXF2EID0, &(RXF2reg.RXF2SIDH));
+ 122:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXF3SIDH, MCP2515_RXF3EID0, &(RXF3reg.RXF3SIDH));
+ 123:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXF4SIDH, MCP2515_RXF4EID0, &(RXF4reg.RXF4SIDH));
+ 124:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXF5SIDH, MCP2515_RXF5EID0, &(RXF5reg.RXF5SIDH));
+ 125:Core/Src/CANSPI.c ****   
+ 126:Core/Src/CANSPI.c ****   /* Accept All (Standard + Extended) */
+ 127:Core/Src/CANSPI.c ****   MCP2515_WriteByte(MCP2515_RXB0CTRL, 0x04);    //Enable BUKT, Accept Filter 0
+ 128:Core/Src/CANSPI.c ****   MCP2515_WriteByte(MCP2515_RXB1CTRL, 0x01);    //Accept Filter 1
+ 129:Core/Src/CANSPI.c ****       
+ 130:Core/Src/CANSPI.c ****   /* 
+ 131:Core/Src/CANSPI.c ****   * tq = 2 * (brp(0) + 1) / 16000000 = 0.125us
+ 132:Core/Src/CANSPI.c ****   * tbit = (SYNC_SEG(1 fixed) + PROP_SEG + PS1 + PS2)
+ 133:Core/Src/CANSPI.c ****   * tbit = 1tq + 5tq + 6tq + 4tq = 16tq
+ 134:Core/Src/CANSPI.c ****   * 16tq = 2us = 500kbps
+ 135:Core/Src/CANSPI.c ****   */
+ 136:Core/Src/CANSPI.c ****   
+ 137:Core/Src/CANSPI.c ****   /* 00(SJW 1tq) 000000 */  
+ 138:Core/Src/CANSPI.c ****   MCP2515_WriteByte(MCP2515_CNF1, 0x00);
+ 139:Core/Src/CANSPI.c ****   
+ 140:Core/Src/CANSPI.c ****   /* 1 1 100(5tq) 101(6tq) */  
+ 141:Core/Src/CANSPI.c ****   MCP2515_WriteByte(MCP2515_CNF2, 0xE5);
+ 142:Core/Src/CANSPI.c ****   
+ 143:Core/Src/CANSPI.c ****   /* 1 0 000 011(4tq) */  
+ 144:Core/Src/CANSPI.c ****   MCP2515_WriteByte(MCP2515_CNF3, 0x83);
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 4
+
+
+ 145:Core/Src/CANSPI.c ****   
+ 146:Core/Src/CANSPI.c ****   /* Normal 모드로 설정 */
+ 147:Core/Src/CANSPI.c ****   if(!MCP2515_SetNormalMode())
+ 148:Core/Src/CANSPI.c ****     return false;
+ 149:Core/Src/CANSPI.c ****   
+ 150:Core/Src/CANSPI.c ****   return true;
+ 151:Core/Src/CANSPI.c **** }
+ 152:Core/Src/CANSPI.c **** 
+ 153:Core/Src/CANSPI.c **** /* Transmit CAN message */
+ 154:Core/Src/CANSPI.c **** uint8_t CANSPI_Transmit(uCAN_MSG *tempCanMsg) 
+ 155:Core/Src/CANSPI.c **** {
+ 156:Core/Src/CANSPI.c ****   uint8_t returnValue = 0;
+ 157:Core/Src/CANSPI.c ****   
+ 158:Core/Src/CANSPI.c ****   idReg.tempSIDH = 0;
+ 159:Core/Src/CANSPI.c ****   idReg.tempSIDL = 0;
+ 160:Core/Src/CANSPI.c ****   idReg.tempEID8 = 0;
+ 161:Core/Src/CANSPI.c ****   idReg.tempEID0 = 0;
+ 162:Core/Src/CANSPI.c ****   
+ 163:Core/Src/CANSPI.c ****   ctrlStatus.ctrl_status = MCP2515_ReadStatus();
+ 164:Core/Src/CANSPI.c ****   
+ 165:Core/Src/CANSPI.c ****   /* Finding empty buffer */
+ 166:Core/Src/CANSPI.c ****   if (ctrlStatus.TXB0REQ != 1)
+ 167:Core/Src/CANSPI.c ****   {
+ 168:Core/Src/CANSPI.c ****     /* convert CAN ID for register */
+ 169:Core/Src/CANSPI.c ****     convertCANid2Reg(tempCanMsg->frame.id, tempCanMsg->frame.idType, &idReg);
+ 170:Core/Src/CANSPI.c ****     
+ 171:Core/Src/CANSPI.c ****     /* Load data to Tx Buffer */
+ 172:Core/Src/CANSPI.c ****     MCP2515_LoadTxSequence(MCP2515_LOAD_TXB0SIDH, &(idReg.tempSIDH), tempCanMsg->frame.dlc, &(tempC
+ 173:Core/Src/CANSPI.c ****     
+ 174:Core/Src/CANSPI.c ****     /* Request to transmit */
+ 175:Core/Src/CANSPI.c ****     MCP2515_RequestToSend(MCP2515_RTS_TX0);
+ 176:Core/Src/CANSPI.c ****     
+ 177:Core/Src/CANSPI.c ****     returnValue = 1;
+ 178:Core/Src/CANSPI.c ****   }
+ 179:Core/Src/CANSPI.c ****   else if (ctrlStatus.TXB1REQ != 1)
+ 180:Core/Src/CANSPI.c ****   {
+ 181:Core/Src/CANSPI.c ****     convertCANid2Reg(tempCanMsg->frame.id, tempCanMsg->frame.idType, &idReg);
+ 182:Core/Src/CANSPI.c ****     
+ 183:Core/Src/CANSPI.c ****     MCP2515_LoadTxSequence(MCP2515_LOAD_TXB1SIDH, &(idReg.tempSIDH), tempCanMsg->frame.dlc, &(tempC
+ 184:Core/Src/CANSPI.c ****     MCP2515_RequestToSend(MCP2515_RTS_TX1);
+ 185:Core/Src/CANSPI.c ****     
+ 186:Core/Src/CANSPI.c ****     returnValue = 1;
+ 187:Core/Src/CANSPI.c ****   }
+ 188:Core/Src/CANSPI.c ****   else if (ctrlStatus.TXB2REQ != 1)
+ 189:Core/Src/CANSPI.c ****   {
+ 190:Core/Src/CANSPI.c ****     convertCANid2Reg(tempCanMsg->frame.id, tempCanMsg->frame.idType, &idReg);
+ 191:Core/Src/CANSPI.c ****     
+ 192:Core/Src/CANSPI.c ****     MCP2515_LoadTxSequence(MCP2515_LOAD_TXB2SIDH, &(idReg.tempSIDH), tempCanMsg->frame.dlc, &(tempC
+ 193:Core/Src/CANSPI.c ****     MCP2515_RequestToSend(MCP2515_RTS_TX2);
+ 194:Core/Src/CANSPI.c ****     
+ 195:Core/Src/CANSPI.c ****     returnValue = 1;
+ 196:Core/Src/CANSPI.c ****   }
+ 197:Core/Src/CANSPI.c ****   
+ 198:Core/Src/CANSPI.c ****   return (returnValue);
+ 199:Core/Src/CANSPI.c **** }
+ 200:Core/Src/CANSPI.c **** 
+ 201:Core/Src/CANSPI.c **** /* Receive CAN message */
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 5
+
+
+ 202:Core/Src/CANSPI.c **** uint8_t CANSPI_Receive(uCAN_MSG *tempCanMsg) 
+ 203:Core/Src/CANSPI.c **** {
+ 204:Core/Src/CANSPI.c ****   uint8_t returnValue = 0;
+ 205:Core/Src/CANSPI.c ****   rx_reg_t rxReg;
+ 206:Core/Src/CANSPI.c ****   ctrl_rx_status_t rxStatus;
+ 207:Core/Src/CANSPI.c ****   
+ 208:Core/Src/CANSPI.c ****   rxStatus.ctrl_rx_status = MCP2515_GetRxStatus();
+ 209:Core/Src/CANSPI.c ****   
+ 210:Core/Src/CANSPI.c ****   /* Check receive buffer */
+ 211:Core/Src/CANSPI.c ****   if (rxStatus.rxBuffer != 0)
+ 212:Core/Src/CANSPI.c ****   {
+ 213:Core/Src/CANSPI.c ****     /* finding buffer which has a message */
+ 214:Core/Src/CANSPI.c ****     if ((rxStatus.rxBuffer == MSG_IN_RXB0)|(rxStatus.rxBuffer == MSG_IN_BOTH_BUFFERS))
+ 215:Core/Src/CANSPI.c ****     {
+ 216:Core/Src/CANSPI.c ****       MCP2515_ReadRxSequence(MCP2515_READ_RXB0SIDH, rxReg.rx_reg_array, sizeof(rxReg.rx_reg_array))
+ 217:Core/Src/CANSPI.c ****     }
+ 218:Core/Src/CANSPI.c ****     else if (rxStatus.rxBuffer == MSG_IN_RXB1)
+ 219:Core/Src/CANSPI.c ****     {
+ 220:Core/Src/CANSPI.c ****       MCP2515_ReadRxSequence(MCP2515_READ_RXB1SIDH, rxReg.rx_reg_array, sizeof(rxReg.rx_reg_array))
+ 221:Core/Src/CANSPI.c ****     }
+ 222:Core/Src/CANSPI.c ****     
+ 223:Core/Src/CANSPI.c ****     /* if the message is extended CAN type */
+ 224:Core/Src/CANSPI.c ****     if (rxStatus.msgType == dEXTENDED_CAN_MSG_ID_2_0B)
+ 225:Core/Src/CANSPI.c ****     {
+ 226:Core/Src/CANSPI.c ****       tempCanMsg->frame.idType = (uint8_t) dEXTENDED_CAN_MSG_ID_2_0B;
+ 227:Core/Src/CANSPI.c ****       tempCanMsg->frame.id = convertReg2ExtendedCANid(rxReg.RXBnEID8, rxReg.RXBnEID0, rxReg.RXBnSID
+ 228:Core/Src/CANSPI.c ****     } 
+ 229:Core/Src/CANSPI.c ****     else 
+ 230:Core/Src/CANSPI.c ****     {
+ 231:Core/Src/CANSPI.c ****       /* Standard type */
+ 232:Core/Src/CANSPI.c ****       tempCanMsg->frame.idType = (uint8_t) dSTANDARD_CAN_MSG_ID_2_0B;
+ 233:Core/Src/CANSPI.c ****       tempCanMsg->frame.id = convertReg2StandardCANid(rxReg.RXBnSIDH, rxReg.RXBnSIDL);
+ 234:Core/Src/CANSPI.c ****     }
+ 235:Core/Src/CANSPI.c ****     
+ 236:Core/Src/CANSPI.c ****     tempCanMsg->frame.dlc   = rxReg.RXBnDLC;
+ 237:Core/Src/CANSPI.c ****     tempCanMsg->frame.data0 = rxReg.RXBnD0;
+ 238:Core/Src/CANSPI.c ****     tempCanMsg->frame.data1 = rxReg.RXBnD1;
+ 239:Core/Src/CANSPI.c ****     tempCanMsg->frame.data2 = rxReg.RXBnD2;
+ 240:Core/Src/CANSPI.c ****     tempCanMsg->frame.data3 = rxReg.RXBnD3;
+ 241:Core/Src/CANSPI.c ****     tempCanMsg->frame.data4 = rxReg.RXBnD4;
+ 242:Core/Src/CANSPI.c ****     tempCanMsg->frame.data5 = rxReg.RXBnD5;
+ 243:Core/Src/CANSPI.c ****     tempCanMsg->frame.data6 = rxReg.RXBnD6;
+ 244:Core/Src/CANSPI.c ****     tempCanMsg->frame.data7 = rxReg.RXBnD7;
+ 245:Core/Src/CANSPI.c ****     
+ 246:Core/Src/CANSPI.c ****     returnValue = 1;
+ 247:Core/Src/CANSPI.c ****   }
+ 248:Core/Src/CANSPI.c ****   
+ 249:Core/Src/CANSPI.c ****   return (returnValue);
+ 250:Core/Src/CANSPI.c **** }
+ 251:Core/Src/CANSPI.c **** 
+ 252:Core/Src/CANSPI.c **** /* check message buffer and return count */
+ 253:Core/Src/CANSPI.c **** uint8_t CANSPI_messagesInBuffer(void)
+ 254:Core/Src/CANSPI.c **** {
+ 255:Core/Src/CANSPI.c ****   uint8_t messageCount = 0;
+ 256:Core/Src/CANSPI.c ****   
+ 257:Core/Src/CANSPI.c ****   ctrlStatus.ctrl_status = MCP2515_ReadStatus();
+ 258:Core/Src/CANSPI.c ****   
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 6
+
+
+ 259:Core/Src/CANSPI.c ****   if(ctrlStatus.RX0IF != 0)
+ 260:Core/Src/CANSPI.c ****   {
+ 261:Core/Src/CANSPI.c ****     messageCount++;
+ 262:Core/Src/CANSPI.c ****   }
+ 263:Core/Src/CANSPI.c ****   
+ 264:Core/Src/CANSPI.c ****   if(ctrlStatus.RX1IF != 0)
+ 265:Core/Src/CANSPI.c ****   {
+ 266:Core/Src/CANSPI.c ****     messageCount++;
+ 267:Core/Src/CANSPI.c ****   }
+ 268:Core/Src/CANSPI.c ****   
+ 269:Core/Src/CANSPI.c ****   return (messageCount);
+ 270:Core/Src/CANSPI.c **** }
+ 271:Core/Src/CANSPI.c **** 
+ 272:Core/Src/CANSPI.c **** /* check BUS off */
+ 273:Core/Src/CANSPI.c **** uint8_t CANSPI_isBussOff(void)
+ 274:Core/Src/CANSPI.c **** {
+ 275:Core/Src/CANSPI.c ****   uint8_t returnValue = 0;
+ 276:Core/Src/CANSPI.c ****   
+ 277:Core/Src/CANSPI.c ****   errorStatus.error_flag_reg = MCP2515_ReadByte(MCP2515_EFLG);
+ 278:Core/Src/CANSPI.c ****   
+ 279:Core/Src/CANSPI.c ****   if(errorStatus.TXBO == 1)
+ 280:Core/Src/CANSPI.c ****   {
+ 281:Core/Src/CANSPI.c ****     returnValue = 1;
+ 282:Core/Src/CANSPI.c ****   }
+ 283:Core/Src/CANSPI.c ****   
+ 284:Core/Src/CANSPI.c ****   return (returnValue);
+ 285:Core/Src/CANSPI.c **** }
+ 286:Core/Src/CANSPI.c **** 
+ 287:Core/Src/CANSPI.c **** /* check Rx Passive Error */
+ 288:Core/Src/CANSPI.c **** uint8_t CANSPI_isRxErrorPassive(void)
+ 289:Core/Src/CANSPI.c **** {
+ 290:Core/Src/CANSPI.c ****   uint8_t returnValue = 0;
+ 291:Core/Src/CANSPI.c ****   
+ 292:Core/Src/CANSPI.c ****   errorStatus.error_flag_reg = MCP2515_ReadByte(MCP2515_EFLG);
+ 293:Core/Src/CANSPI.c ****   
+ 294:Core/Src/CANSPI.c ****   if(errorStatus.RXEP == 1)
+ 295:Core/Src/CANSPI.c ****   {
+ 296:Core/Src/CANSPI.c ****     returnValue = 1;
+ 297:Core/Src/CANSPI.c ****   }
+ 298:Core/Src/CANSPI.c ****   
+ 299:Core/Src/CANSPI.c ****   return (returnValue);
+ 300:Core/Src/CANSPI.c **** }
+ 301:Core/Src/CANSPI.c **** 
+ 302:Core/Src/CANSPI.c **** /* check Tx Passive Error */
+ 303:Core/Src/CANSPI.c **** uint8_t CANSPI_isTxErrorPassive(void)
+ 304:Core/Src/CANSPI.c **** {
+ 305:Core/Src/CANSPI.c ****   uint8_t returnValue = 0;
+ 306:Core/Src/CANSPI.c ****   
+ 307:Core/Src/CANSPI.c ****   errorStatus.error_flag_reg = MCP2515_ReadByte(MCP2515_EFLG);
+ 308:Core/Src/CANSPI.c ****   
+ 309:Core/Src/CANSPI.c ****   if(errorStatus.TXEP == 1)
+ 310:Core/Src/CANSPI.c ****   {
+ 311:Core/Src/CANSPI.c ****     returnValue = 1;
+ 312:Core/Src/CANSPI.c ****   }
+ 313:Core/Src/CANSPI.c ****   
+ 314:Core/Src/CANSPI.c ****   return (returnValue);
+ 315:Core/Src/CANSPI.c **** }
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 7
+
+
+ 316:Core/Src/CANSPI.c **** 
+ 317:Core/Src/CANSPI.c **** /* convert register value to extended CAN ID */
+ 318:Core/Src/CANSPI.c **** static uint32_t convertReg2ExtendedCANid(uint8_t tempRXBn_EIDH, uint8_t tempRXBn_EIDL, uint8_t temp
+ 319:Core/Src/CANSPI.c **** {
+  29              		.loc 1 319 1 view -0
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33              		@ link register save eliminated.
+ 320:Core/Src/CANSPI.c ****   uint32_t returnValue = 0;
+  34              		.loc 1 320 3 view .LVU1
+ 321:Core/Src/CANSPI.c ****   uint32_t ConvertedID = 0;
+  35              		.loc 1 321 3 view .LVU2
+ 322:Core/Src/CANSPI.c ****   uint8_t CAN_standardLo_ID_lo2bits;
+  36              		.loc 1 322 3 view .LVU3
+ 323:Core/Src/CANSPI.c ****   uint8_t CAN_standardLo_ID_hi3bits;
+  37              		.loc 1 323 3 view .LVU4
+ 324:Core/Src/CANSPI.c ****   
+ 325:Core/Src/CANSPI.c ****   CAN_standardLo_ID_lo2bits = (tempRXBn_SIDL & 0x03);
+  38              		.loc 1 325 3 view .LVU5
+  39              		.loc 1 325 29 is_stmt 0 view .LVU6
+  40 0000 03F0030C 		and	ip, r3, #3
+  41              	.LVL1:
+ 326:Core/Src/CANSPI.c ****   CAN_standardLo_ID_hi3bits = (tempRXBn_SIDL >> 5);
+  42              		.loc 1 326 3 is_stmt 1 view .LVU7
+ 327:Core/Src/CANSPI.c ****   ConvertedID = (tempRXBn_SIDH << 3);
+  43              		.loc 1 327 3 view .LVU8
+  44              		.loc 1 327 15 is_stmt 0 view .LVU9
+  45 0004 D200     		lsls	r2, r2, #3
+  46              	.LVL2:
+ 328:Core/Src/CANSPI.c ****   ConvertedID = ConvertedID + CAN_standardLo_ID_hi3bits;
+  47              		.loc 1 328 3 is_stmt 1 view .LVU10
+  48              		.loc 1 328 15 is_stmt 0 view .LVU11
+  49 0006 02EB5313 		add	r3, r2, r3, lsr #5
+  50              	.LVL3:
+ 329:Core/Src/CANSPI.c ****   ConvertedID = (ConvertedID << 2);
+  51              		.loc 1 329 3 is_stmt 1 view .LVU12
+ 330:Core/Src/CANSPI.c ****   ConvertedID = ConvertedID + CAN_standardLo_ID_lo2bits;
+  52              		.loc 1 330 3 view .LVU13
+  53              		.loc 1 330 15 is_stmt 0 view .LVU14
+  54 000a 0CEB830C 		add	ip, ip, r3, lsl #2
+  55              	.LVL4:
+ 331:Core/Src/CANSPI.c ****   ConvertedID = (ConvertedID << 8);
+  56              		.loc 1 331 3 is_stmt 1 view .LVU15
+ 332:Core/Src/CANSPI.c ****   ConvertedID = ConvertedID + tempRXBn_EIDH;
+  57              		.loc 1 332 3 view .LVU16
+  58              		.loc 1 332 15 is_stmt 0 view .LVU17
+  59 000e 00EB0C20 		add	r0, r0, ip, lsl #8
+  60              	.LVL5:
+ 333:Core/Src/CANSPI.c ****   ConvertedID = (ConvertedID << 8);
+  61              		.loc 1 333 3 is_stmt 1 view .LVU18
+ 334:Core/Src/CANSPI.c ****   ConvertedID = ConvertedID + tempRXBn_EIDL;
+  62              		.loc 1 334 3 view .LVU19
+ 335:Core/Src/CANSPI.c ****   returnValue = ConvertedID;    
+  63              		.loc 1 335 3 view .LVU20
+ 336:Core/Src/CANSPI.c ****   return (returnValue);
+  64              		.loc 1 336 3 view .LVU21
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 8
+
+
+ 337:Core/Src/CANSPI.c **** }
+  65              		.loc 1 337 1 is_stmt 0 view .LVU22
+  66 0012 01EB0020 		add	r0, r1, r0, lsl #8
+  67              	.LVL6:
+  68              		.loc 1 337 1 view .LVU23
+  69 0016 7047     		bx	lr
+  70              		.cfi_endproc
+  71              	.LFE142:
+  73              		.section	.text.convertReg2StandardCANid,"ax",%progbits
+  74              		.align	1
+  75              		.syntax unified
+  76              		.thumb
+  77              		.thumb_func
+  79              	convertReg2StandardCANid:
+  80              	.LVL7:
+  81              	.LFB143:
+ 338:Core/Src/CANSPI.c **** 
+ 339:Core/Src/CANSPI.c **** /* convert register value to standard CAN ID */
+ 340:Core/Src/CANSPI.c **** static uint32_t convertReg2StandardCANid(uint8_t tempRXBn_SIDH, uint8_t tempRXBn_SIDL) 
+ 341:Core/Src/CANSPI.c **** {
+  82              		.loc 1 341 1 is_stmt 1 view -0
+  83              		.cfi_startproc
+  84              		@ args = 0, pretend = 0, frame = 0
+  85              		@ frame_needed = 0, uses_anonymous_args = 0
+  86              		@ link register save eliminated.
+ 342:Core/Src/CANSPI.c ****   uint32_t returnValue = 0;
+  87              		.loc 1 342 3 view .LVU25
+ 343:Core/Src/CANSPI.c ****   uint32_t ConvertedID;
+  88              		.loc 1 343 3 view .LVU26
+ 344:Core/Src/CANSPI.c ****   
+ 345:Core/Src/CANSPI.c ****   ConvertedID = (tempRXBn_SIDH << 3);
+  89              		.loc 1 345 3 view .LVU27
+ 346:Core/Src/CANSPI.c ****   ConvertedID = ConvertedID + (tempRXBn_SIDL >> 5);
+  90              		.loc 1 346 3 view .LVU28
+  91              		.loc 1 346 46 is_stmt 0 view .LVU29
+  92 0000 4909     		lsrs	r1, r1, #5
+  93              	.LVL8:
+ 347:Core/Src/CANSPI.c ****   returnValue = ConvertedID;
+  94              		.loc 1 347 3 is_stmt 1 view .LVU30
+ 348:Core/Src/CANSPI.c ****   
+ 349:Core/Src/CANSPI.c ****   return (returnValue);
+  95              		.loc 1 349 3 view .LVU31
+ 350:Core/Src/CANSPI.c **** }
+  96              		.loc 1 350 1 is_stmt 0 view .LVU32
+  97 0002 01EBC000 		add	r0, r1, r0, lsl #3
+  98              	.LVL9:
+  99              		.loc 1 350 1 view .LVU33
+ 100 0006 7047     		bx	lr
+ 101              		.cfi_endproc
+ 102              	.LFE143:
+ 104              		.section	.text.convertCANid2Reg,"ax",%progbits
+ 105              		.align	1
+ 106              		.syntax unified
+ 107              		.thumb
+ 108              		.thumb_func
+ 110              	convertCANid2Reg:
+ 111              	.LVL10:
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 9
+
+
+ 112              	.LFB144:
+ 351:Core/Src/CANSPI.c **** 
+ 352:Core/Src/CANSPI.c **** /* convert CAN ID to register value */
+ 353:Core/Src/CANSPI.c **** static void convertCANid2Reg(uint32_t tempPassedInID, uint8_t canIdType, id_reg_t *passedIdReg) 
+ 354:Core/Src/CANSPI.c **** {
+ 113              		.loc 1 354 1 is_stmt 1 view -0
+ 114              		.cfi_startproc
+ 115              		@ args = 0, pretend = 0, frame = 0
+ 116              		@ frame_needed = 0, uses_anonymous_args = 0
+ 117              		@ link register save eliminated.
+ 355:Core/Src/CANSPI.c ****   uint8_t wipSIDL = 0;
+ 118              		.loc 1 355 3 view .LVU35
+ 356:Core/Src/CANSPI.c ****   
+ 357:Core/Src/CANSPI.c ****   if (canIdType == dEXTENDED_CAN_MSG_ID_2_0B) 
+ 119              		.loc 1 357 3 view .LVU36
+ 120              		.loc 1 357 6 is_stmt 0 view .LVU37
+ 121 0000 0229     		cmp	r1, #2
+ 122 0002 07D0     		beq	.L6
+ 358:Core/Src/CANSPI.c ****   {
+ 359:Core/Src/CANSPI.c ****     //EID0
+ 360:Core/Src/CANSPI.c ****     passedIdReg->tempEID0 = 0xFF & tempPassedInID;
+ 361:Core/Src/CANSPI.c ****     tempPassedInID = tempPassedInID >> 8;
+ 362:Core/Src/CANSPI.c ****     
+ 363:Core/Src/CANSPI.c ****     //EID8
+ 364:Core/Src/CANSPI.c ****     passedIdReg->tempEID8 = 0xFF & tempPassedInID;
+ 365:Core/Src/CANSPI.c ****     tempPassedInID = tempPassedInID >> 8;
+ 366:Core/Src/CANSPI.c ****     
+ 367:Core/Src/CANSPI.c ****     //SIDL
+ 368:Core/Src/CANSPI.c ****     wipSIDL = 0x03 & tempPassedInID;
+ 369:Core/Src/CANSPI.c ****     tempPassedInID = tempPassedInID << 3;
+ 370:Core/Src/CANSPI.c ****     wipSIDL = (0xE0 & tempPassedInID) + wipSIDL;
+ 371:Core/Src/CANSPI.c ****     wipSIDL = wipSIDL + 0x08;
+ 372:Core/Src/CANSPI.c ****     passedIdReg->tempSIDL = 0xEB & wipSIDL;
+ 373:Core/Src/CANSPI.c ****     
+ 374:Core/Src/CANSPI.c ****     //SIDH
+ 375:Core/Src/CANSPI.c ****     tempPassedInID = tempPassedInID >> 8;
+ 376:Core/Src/CANSPI.c ****     passedIdReg->tempSIDH = 0xFF & tempPassedInID;
+ 377:Core/Src/CANSPI.c ****   } 
+ 378:Core/Src/CANSPI.c ****   else
+ 379:Core/Src/CANSPI.c ****   {
+ 380:Core/Src/CANSPI.c ****     passedIdReg->tempEID8 = 0;
+ 123              		.loc 1 380 5 is_stmt 1 view .LVU38
+ 124              		.loc 1 380 27 is_stmt 0 view .LVU39
+ 125 0004 0023     		movs	r3, #0
+ 126 0006 9370     		strb	r3, [r2, #2]
+ 381:Core/Src/CANSPI.c ****     passedIdReg->tempEID0 = 0;
+ 127              		.loc 1 381 5 is_stmt 1 view .LVU40
+ 128              		.loc 1 381 27 is_stmt 0 view .LVU41
+ 129 0008 D370     		strb	r3, [r2, #3]
+ 382:Core/Src/CANSPI.c ****     tempPassedInID = tempPassedInID << 5;
+ 130              		.loc 1 382 5 is_stmt 1 view .LVU42
+ 131              		.loc 1 382 20 is_stmt 0 view .LVU43
+ 132 000a 4001     		lsls	r0, r0, #5
+ 133              	.LVL11:
+ 383:Core/Src/CANSPI.c ****     passedIdReg->tempSIDL = 0xFF & tempPassedInID;
+ 134              		.loc 1 383 5 is_stmt 1 view .LVU44
+ 135              		.loc 1 383 27 is_stmt 0 view .LVU45
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 10
+
+
+ 136 000c 5070     		strb	r0, [r2, #1]
+ 384:Core/Src/CANSPI.c ****     tempPassedInID = tempPassedInID >> 8;
+ 137              		.loc 1 384 5 is_stmt 1 view .LVU46
+ 138              		.loc 1 384 20 is_stmt 0 view .LVU47
+ 139 000e 000A     		lsrs	r0, r0, #8
+ 140              	.LVL12:
+ 385:Core/Src/CANSPI.c ****     passedIdReg->tempSIDH = 0xFF & tempPassedInID;
+ 141              		.loc 1 385 5 is_stmt 1 view .LVU48
+ 142              		.loc 1 385 27 is_stmt 0 view .LVU49
+ 143 0010 1070     		strb	r0, [r2]
+ 386:Core/Src/CANSPI.c ****   }
+ 387:Core/Src/CANSPI.c **** }
+ 144              		.loc 1 387 1 view .LVU50
+ 145 0012 7047     		bx	lr
+ 146              	.L6:
+ 360:Core/Src/CANSPI.c ****     tempPassedInID = tempPassedInID >> 8;
+ 147              		.loc 1 360 5 is_stmt 1 view .LVU51
+ 360:Core/Src/CANSPI.c ****     tempPassedInID = tempPassedInID >> 8;
+ 148              		.loc 1 360 27 is_stmt 0 view .LVU52
+ 149 0014 D070     		strb	r0, [r2, #3]
+ 361:Core/Src/CANSPI.c ****     
+ 150              		.loc 1 361 5 is_stmt 1 view .LVU53
+ 361:Core/Src/CANSPI.c ****     
+ 151              		.loc 1 361 20 is_stmt 0 view .LVU54
+ 152 0016 030A     		lsrs	r3, r0, #8
+ 153              	.LVL13:
+ 364:Core/Src/CANSPI.c ****     tempPassedInID = tempPassedInID >> 8;
+ 154              		.loc 1 364 5 is_stmt 1 view .LVU55
+ 364:Core/Src/CANSPI.c ****     tempPassedInID = tempPassedInID >> 8;
+ 155              		.loc 1 364 27 is_stmt 0 view .LVU56
+ 156 0018 9370     		strb	r3, [r2, #2]
+ 365:Core/Src/CANSPI.c ****     
+ 157              		.loc 1 365 5 is_stmt 1 view .LVU57
+ 365:Core/Src/CANSPI.c ****     
+ 158              		.loc 1 365 20 is_stmt 0 view .LVU58
+ 159 001a 010C     		lsrs	r1, r0, #16
+ 160              	.LVL14:
+ 368:Core/Src/CANSPI.c ****     tempPassedInID = tempPassedInID << 3;
+ 161              		.loc 1 368 5 is_stmt 1 view .LVU59
+ 368:Core/Src/CANSPI.c ****     tempPassedInID = tempPassedInID << 3;
+ 162              		.loc 1 368 13 is_stmt 0 view .LVU60
+ 163 001c C0F30140 		ubfx	r0, r0, #16, #2
+ 164              	.LVL15:
+ 369:Core/Src/CANSPI.c ****     wipSIDL = (0xE0 & tempPassedInID) + wipSIDL;
+ 165              		.loc 1 369 5 is_stmt 1 view .LVU61
+ 369:Core/Src/CANSPI.c ****     wipSIDL = (0xE0 & tempPassedInID) + wipSIDL;
+ 166              		.loc 1 369 20 is_stmt 0 view .LVU62
+ 167 0020 C900     		lsls	r1, r1, #3
+ 168              	.LVL16:
+ 370:Core/Src/CANSPI.c ****     wipSIDL = wipSIDL + 0x08;
+ 169              		.loc 1 370 5 is_stmt 1 view .LVU63
+ 370:Core/Src/CANSPI.c ****     wipSIDL = wipSIDL + 0x08;
+ 170              		.loc 1 370 21 is_stmt 0 view .LVU64
+ 171 0022 01F0E003 		and	r3, r1, #224
+ 370:Core/Src/CANSPI.c ****     wipSIDL = wipSIDL + 0x08;
+ 172              		.loc 1 370 13 view .LVU65
+ 173 0026 0343     		orrs	r3, r3, r0
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 11
+
+
+ 174              	.LVL17:
+ 371:Core/Src/CANSPI.c ****     passedIdReg->tempSIDL = 0xEB & wipSIDL;
+ 175              		.loc 1 371 5 is_stmt 1 view .LVU66
+ 371:Core/Src/CANSPI.c ****     passedIdReg->tempSIDL = 0xEB & wipSIDL;
+ 176              		.loc 1 371 13 is_stmt 0 view .LVU67
+ 177 0028 0833     		adds	r3, r3, #8
+ 178              	.LVL18:
+ 372:Core/Src/CANSPI.c ****     
+ 179              		.loc 1 372 5 is_stmt 1 view .LVU68
+ 372:Core/Src/CANSPI.c ****     
+ 180              		.loc 1 372 34 is_stmt 0 view .LVU69
+ 181 002a 03F0EB03 		and	r3, r3, #235
+ 182              	.LVL19:
+ 372:Core/Src/CANSPI.c ****     
+ 183              		.loc 1 372 27 view .LVU70
+ 184 002e 5370     		strb	r3, [r2, #1]
+ 375:Core/Src/CANSPI.c ****     passedIdReg->tempSIDH = 0xFF & tempPassedInID;
+ 185              		.loc 1 375 5 is_stmt 1 view .LVU71
+ 375:Core/Src/CANSPI.c ****     passedIdReg->tempSIDH = 0xFF & tempPassedInID;
+ 186              		.loc 1 375 20 is_stmt 0 view .LVU72
+ 187 0030 090A     		lsrs	r1, r1, #8
+ 188              	.LVL20:
+ 376:Core/Src/CANSPI.c ****   } 
+ 189              		.loc 1 376 5 is_stmt 1 view .LVU73
+ 376:Core/Src/CANSPI.c ****   } 
+ 190              		.loc 1 376 27 is_stmt 0 view .LVU74
+ 191 0032 1170     		strb	r1, [r2]
+ 192 0034 7047     		bx	lr
+ 193              		.cfi_endproc
+ 194              	.LFE144:
+ 196              		.section	.text.CANSPI_Sleep,"ax",%progbits
+ 197              		.align	1
+ 198              		.global	CANSPI_Sleep
+ 199              		.syntax unified
+ 200              		.thumb
+ 201              		.thumb_func
+ 203              	CANSPI_Sleep:
+ 204              	.LFB134:
+  40:Core/Src/CANSPI.c ****   /* Clear CAN bus wakeup interrupt */
+ 205              		.loc 1 40 1 is_stmt 1 view -0
+ 206              		.cfi_startproc
+ 207              		@ args = 0, pretend = 0, frame = 0
+ 208              		@ frame_needed = 0, uses_anonymous_args = 0
+ 209 0000 08B5     		push	{r3, lr}
+ 210              		.cfi_def_cfa_offset 8
+ 211              		.cfi_offset 3, -8
+ 212              		.cfi_offset 14, -4
+  42:Core/Src/CANSPI.c ****   
+ 213              		.loc 1 42 3 view .LVU76
+ 214 0002 0022     		movs	r2, #0
+ 215 0004 4021     		movs	r1, #64
+ 216 0006 2C20     		movs	r0, #44
+ 217 0008 FFF7FEFF 		bl	MCP2515_BitModify
+ 218              	.LVL21:
+  45:Core/Src/CANSPI.c ****   
+ 219              		.loc 1 45 3 view .LVU77
+ 220 000c 4022     		movs	r2, #64
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 12
+
+
+ 221 000e 1146     		mov	r1, r2
+ 222 0010 2B20     		movs	r0, #43
+ 223 0012 FFF7FEFF 		bl	MCP2515_BitModify
+ 224              	.LVL22:
+  47:Core/Src/CANSPI.c **** }
+ 225              		.loc 1 47 3 view .LVU78
+ 226 0016 FFF7FEFF 		bl	MCP2515_SetSleepMode
+ 227              	.LVL23:
+  48:Core/Src/CANSPI.c **** 
+ 228              		.loc 1 48 1 is_stmt 0 view .LVU79
+ 229 001a 08BD     		pop	{r3, pc}
+ 230              		.cfi_endproc
+ 231              	.LFE134:
+ 233              		.section	.text.CANSPI_Initialize,"ax",%progbits
+ 234              		.align	1
+ 235              		.global	CANSPI_Initialize
+ 236              		.syntax unified
+ 237              		.thumb
+ 238              		.thumb_func
+ 240              	CANSPI_Initialize:
+ 241              	.LFB135:
+  52:Core/Src/CANSPI.c ****   RXF0 RXF0reg;
+ 242              		.loc 1 52 1 is_stmt 1 view -0
+ 243              		.cfi_startproc
+ 244              		@ args = 0, pretend = 0, frame = 32
+ 245              		@ frame_needed = 0, uses_anonymous_args = 0
+ 246 0000 00B5     		push	{lr}
+ 247              		.cfi_def_cfa_offset 4
+ 248              		.cfi_offset 14, -4
+ 249 0002 89B0     		sub	sp, sp, #36
+ 250              		.cfi_def_cfa_offset 40
+  53:Core/Src/CANSPI.c ****   RXF1 RXF1reg;
+ 251              		.loc 1 53 3 view .LVU81
+  54:Core/Src/CANSPI.c ****   RXF2 RXF2reg;
+ 252              		.loc 1 54 3 view .LVU82
+  55:Core/Src/CANSPI.c ****   RXF3 RXF3reg;
+ 253              		.loc 1 55 3 view .LVU83
+  56:Core/Src/CANSPI.c ****   RXF4 RXF4reg;
+ 254              		.loc 1 56 3 view .LVU84
+  57:Core/Src/CANSPI.c ****   RXF5 RXF5reg;
+ 255              		.loc 1 57 3 view .LVU85
+  58:Core/Src/CANSPI.c ****   RXM0 RXM0reg;
+ 256              		.loc 1 58 3 view .LVU86
+  59:Core/Src/CANSPI.c ****   RXM1 RXM1reg;
+ 257              		.loc 1 59 3 view .LVU87
+  60:Core/Src/CANSPI.c ****       
+ 258              		.loc 1 60 3 view .LVU88
+  63:Core/Src/CANSPI.c ****   RXM0reg.RXM0SIDL = 0x00;
+ 259              		.loc 1 63 3 view .LVU89
+  63:Core/Src/CANSPI.c ****   RXM0reg.RXM0SIDL = 0x00;
+ 260              		.loc 1 63 20 is_stmt 0 view .LVU90
+ 261 0004 0023     		movs	r3, #0
+ 262 0006 8DF80430 		strb	r3, [sp, #4]
+  64:Core/Src/CANSPI.c ****   RXM0reg.RXM0EID8 = 0x00;
+ 263              		.loc 1 64 3 is_stmt 1 view .LVU91
+  64:Core/Src/CANSPI.c ****   RXM0reg.RXM0EID8 = 0x00;
+ 264              		.loc 1 64 20 is_stmt 0 view .LVU92
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 13
+
+
+ 265 000a 8DF80530 		strb	r3, [sp, #5]
+  65:Core/Src/CANSPI.c ****   RXM0reg.RXM0EID0 = 0x00;
+ 266              		.loc 1 65 3 is_stmt 1 view .LVU93
+  65:Core/Src/CANSPI.c ****   RXM0reg.RXM0EID0 = 0x00;
+ 267              		.loc 1 65 20 is_stmt 0 view .LVU94
+ 268 000e 8DF80630 		strb	r3, [sp, #6]
+  66:Core/Src/CANSPI.c ****   
+ 269              		.loc 1 66 3 is_stmt 1 view .LVU95
+  66:Core/Src/CANSPI.c ****   
+ 270              		.loc 1 66 20 is_stmt 0 view .LVU96
+ 271 0012 8DF80730 		strb	r3, [sp, #7]
+  68:Core/Src/CANSPI.c ****   RXM1reg.RXM1SIDL = 0x00;
+ 272              		.loc 1 68 3 is_stmt 1 view .LVU97
+  68:Core/Src/CANSPI.c ****   RXM1reg.RXM1SIDL = 0x00;
+ 273              		.loc 1 68 20 is_stmt 0 view .LVU98
+ 274 0016 8DF80030 		strb	r3, [sp]
+  69:Core/Src/CANSPI.c ****   RXM1reg.RXM1EID8 = 0x00;
+ 275              		.loc 1 69 3 is_stmt 1 view .LVU99
+  69:Core/Src/CANSPI.c ****   RXM1reg.RXM1EID8 = 0x00;
+ 276              		.loc 1 69 20 is_stmt 0 view .LVU100
+ 277 001a 8DF80130 		strb	r3, [sp, #1]
+  70:Core/Src/CANSPI.c ****   RXM1reg.RXM1EID0 = 0x00;
+ 278              		.loc 1 70 3 is_stmt 1 view .LVU101
+  70:Core/Src/CANSPI.c ****   RXM1reg.RXM1EID0 = 0x00;
+ 279              		.loc 1 70 20 is_stmt 0 view .LVU102
+ 280 001e 8DF80230 		strb	r3, [sp, #2]
+  71:Core/Src/CANSPI.c ****   
+ 281              		.loc 1 71 3 is_stmt 1 view .LVU103
+  71:Core/Src/CANSPI.c ****   
+ 282              		.loc 1 71 20 is_stmt 0 view .LVU104
+ 283 0022 8DF80330 		strb	r3, [sp, #3]
+  74:Core/Src/CANSPI.c ****   RXF0reg.RXF0SIDL = 0x00;      //Starndard Filter
+ 284              		.loc 1 74 3 is_stmt 1 view .LVU105
+  74:Core/Src/CANSPI.c ****   RXF0reg.RXF0SIDL = 0x00;      //Starndard Filter
+ 285              		.loc 1 74 20 is_stmt 0 view .LVU106
+ 286 0026 8DF81C30 		strb	r3, [sp, #28]
+  75:Core/Src/CANSPI.c ****   RXF0reg.RXF0EID8 = 0x00;
+ 287              		.loc 1 75 3 is_stmt 1 view .LVU107
+  75:Core/Src/CANSPI.c ****   RXF0reg.RXF0EID8 = 0x00;
+ 288              		.loc 1 75 20 is_stmt 0 view .LVU108
+ 289 002a 8DF81D30 		strb	r3, [sp, #29]
+  76:Core/Src/CANSPI.c ****   RXF0reg.RXF0EID0 = 0x00;
+ 290              		.loc 1 76 3 is_stmt 1 view .LVU109
+  76:Core/Src/CANSPI.c ****   RXF0reg.RXF0EID0 = 0x00;
+ 291              		.loc 1 76 20 is_stmt 0 view .LVU110
+ 292 002e 8DF81E30 		strb	r3, [sp, #30]
+  77:Core/Src/CANSPI.c ****   
+ 293              		.loc 1 77 3 is_stmt 1 view .LVU111
+  77:Core/Src/CANSPI.c ****   
+ 294              		.loc 1 77 20 is_stmt 0 view .LVU112
+ 295 0032 8DF81F30 		strb	r3, [sp, #31]
+  79:Core/Src/CANSPI.c ****   RXF1reg.RXF1SIDL = 0x08;      //Exntended Filter
+ 296              		.loc 1 79 3 is_stmt 1 view .LVU113
+  79:Core/Src/CANSPI.c ****   RXF1reg.RXF1SIDL = 0x08;      //Exntended Filter
+ 297              		.loc 1 79 20 is_stmt 0 view .LVU114
+ 298 0036 8DF81830 		strb	r3, [sp, #24]
+  80:Core/Src/CANSPI.c ****   RXF1reg.RXF1EID8 = 0x00;
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 14
+
+
+ 299              		.loc 1 80 3 is_stmt 1 view .LVU115
+  80:Core/Src/CANSPI.c ****   RXF1reg.RXF1EID8 = 0x00;
+ 300              		.loc 1 80 20 is_stmt 0 view .LVU116
+ 301 003a 0822     		movs	r2, #8
+ 302 003c 8DF81920 		strb	r2, [sp, #25]
+  81:Core/Src/CANSPI.c ****   RXF1reg.RXF1EID0 = 0x00;
+ 303              		.loc 1 81 3 is_stmt 1 view .LVU117
+  81:Core/Src/CANSPI.c ****   RXF1reg.RXF1EID0 = 0x00;
+ 304              		.loc 1 81 20 is_stmt 0 view .LVU118
+ 305 0040 8DF81A30 		strb	r3, [sp, #26]
+  82:Core/Src/CANSPI.c ****   
+ 306              		.loc 1 82 3 is_stmt 1 view .LVU119
+  82:Core/Src/CANSPI.c ****   
+ 307              		.loc 1 82 20 is_stmt 0 view .LVU120
+ 308 0044 8DF81B30 		strb	r3, [sp, #27]
+  84:Core/Src/CANSPI.c ****   RXF2reg.RXF2SIDL = 0x00;
+ 309              		.loc 1 84 3 is_stmt 1 view .LVU121
+  84:Core/Src/CANSPI.c ****   RXF2reg.RXF2SIDL = 0x00;
+ 310              		.loc 1 84 20 is_stmt 0 view .LVU122
+ 311 0048 8DF81430 		strb	r3, [sp, #20]
+  85:Core/Src/CANSPI.c ****   RXF2reg.RXF2EID8 = 0x00;
+ 312              		.loc 1 85 3 is_stmt 1 view .LVU123
+  85:Core/Src/CANSPI.c ****   RXF2reg.RXF2EID8 = 0x00;
+ 313              		.loc 1 85 20 is_stmt 0 view .LVU124
+ 314 004c 8DF81530 		strb	r3, [sp, #21]
+  86:Core/Src/CANSPI.c ****   RXF2reg.RXF2EID0 = 0x00;
+ 315              		.loc 1 86 3 is_stmt 1 view .LVU125
+  86:Core/Src/CANSPI.c ****   RXF2reg.RXF2EID0 = 0x00;
+ 316              		.loc 1 86 20 is_stmt 0 view .LVU126
+ 317 0050 8DF81630 		strb	r3, [sp, #22]
+  87:Core/Src/CANSPI.c ****   
+ 318              		.loc 1 87 3 is_stmt 1 view .LVU127
+  87:Core/Src/CANSPI.c ****   
+ 319              		.loc 1 87 20 is_stmt 0 view .LVU128
+ 320 0054 8DF81730 		strb	r3, [sp, #23]
+  89:Core/Src/CANSPI.c ****   RXF3reg.RXF3SIDL = 0x00;
+ 321              		.loc 1 89 3 is_stmt 1 view .LVU129
+  89:Core/Src/CANSPI.c ****   RXF3reg.RXF3SIDL = 0x00;
+ 322              		.loc 1 89 20 is_stmt 0 view .LVU130
+ 323 0058 8DF81030 		strb	r3, [sp, #16]
+  90:Core/Src/CANSPI.c ****   RXF3reg.RXF3EID8 = 0x00;
+ 324              		.loc 1 90 3 is_stmt 1 view .LVU131
+  90:Core/Src/CANSPI.c ****   RXF3reg.RXF3EID8 = 0x00;
+ 325              		.loc 1 90 20 is_stmt 0 view .LVU132
+ 326 005c 8DF81130 		strb	r3, [sp, #17]
+  91:Core/Src/CANSPI.c ****   RXF3reg.RXF3EID0 = 0x00;
+ 327              		.loc 1 91 3 is_stmt 1 view .LVU133
+  91:Core/Src/CANSPI.c ****   RXF3reg.RXF3EID0 = 0x00;
+ 328              		.loc 1 91 20 is_stmt 0 view .LVU134
+ 329 0060 8DF81230 		strb	r3, [sp, #18]
+  92:Core/Src/CANSPI.c ****   
+ 330              		.loc 1 92 3 is_stmt 1 view .LVU135
+  92:Core/Src/CANSPI.c ****   
+ 331              		.loc 1 92 20 is_stmt 0 view .LVU136
+ 332 0064 8DF81330 		strb	r3, [sp, #19]
+  94:Core/Src/CANSPI.c ****   RXF4reg.RXF4SIDL = 0x00;
+ 333              		.loc 1 94 3 is_stmt 1 view .LVU137
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 15
+
+
+  94:Core/Src/CANSPI.c ****   RXF4reg.RXF4SIDL = 0x00;
+ 334              		.loc 1 94 20 is_stmt 0 view .LVU138
+ 335 0068 8DF80C30 		strb	r3, [sp, #12]
+  95:Core/Src/CANSPI.c ****   RXF4reg.RXF4EID8 = 0x00;
+ 336              		.loc 1 95 3 is_stmt 1 view .LVU139
+  95:Core/Src/CANSPI.c ****   RXF4reg.RXF4EID8 = 0x00;
+ 337              		.loc 1 95 20 is_stmt 0 view .LVU140
+ 338 006c 8DF80D30 		strb	r3, [sp, #13]
+  96:Core/Src/CANSPI.c ****   RXF4reg.RXF4EID0 = 0x00;
+ 339              		.loc 1 96 3 is_stmt 1 view .LVU141
+  96:Core/Src/CANSPI.c ****   RXF4reg.RXF4EID0 = 0x00;
+ 340              		.loc 1 96 20 is_stmt 0 view .LVU142
+ 341 0070 8DF80E30 		strb	r3, [sp, #14]
+  97:Core/Src/CANSPI.c ****   
+ 342              		.loc 1 97 3 is_stmt 1 view .LVU143
+  97:Core/Src/CANSPI.c ****   
+ 343              		.loc 1 97 20 is_stmt 0 view .LVU144
+ 344 0074 8DF80F30 		strb	r3, [sp, #15]
+  99:Core/Src/CANSPI.c ****   RXF5reg.RXF5SIDL = 0x08;
+ 345              		.loc 1 99 3 is_stmt 1 view .LVU145
+  99:Core/Src/CANSPI.c ****   RXF5reg.RXF5SIDL = 0x08;
+ 346              		.loc 1 99 20 is_stmt 0 view .LVU146
+ 347 0078 8DF80830 		strb	r3, [sp, #8]
+ 100:Core/Src/CANSPI.c ****   RXF5reg.RXF5EID8 = 0x00;
+ 348              		.loc 1 100 3 is_stmt 1 view .LVU147
+ 100:Core/Src/CANSPI.c ****   RXF5reg.RXF5EID8 = 0x00;
+ 349              		.loc 1 100 20 is_stmt 0 view .LVU148
+ 350 007c 8DF80920 		strb	r2, [sp, #9]
+ 101:Core/Src/CANSPI.c ****   RXF5reg.RXF5EID0 = 0x00;
+ 351              		.loc 1 101 3 is_stmt 1 view .LVU149
+ 101:Core/Src/CANSPI.c ****   RXF5reg.RXF5EID0 = 0x00;
+ 352              		.loc 1 101 20 is_stmt 0 view .LVU150
+ 353 0080 8DF80A30 		strb	r3, [sp, #10]
+ 102:Core/Src/CANSPI.c ****   
+ 354              		.loc 1 102 3 is_stmt 1 view .LVU151
+ 102:Core/Src/CANSPI.c ****   
+ 355              		.loc 1 102 20 is_stmt 0 view .LVU152
+ 356 0084 8DF80B30 		strb	r3, [sp, #11]
+ 105:Core/Src/CANSPI.c ****   {
+ 357              		.loc 1 105 3 is_stmt 1 view .LVU153
+ 105:Core/Src/CANSPI.c ****   {
+ 358              		.loc 1 105 7 is_stmt 0 view .LVU154
+ 359 0088 FFF7FEFF 		bl	MCP2515_Initialize
+ 360              	.LVL24:
+ 105:Core/Src/CANSPI.c ****   {
+ 361              		.loc 1 105 5 discriminator 1 view .LVU155
+ 362 008c 0346     		mov	r3, r0
+ 363 008e 18B9     		cbnz	r0, .L12
+ 364              	.L10:
+ 151:Core/Src/CANSPI.c **** 
+ 365              		.loc 1 151 1 view .LVU156
+ 366 0090 1846     		mov	r0, r3
+ 367 0092 09B0     		add	sp, sp, #36
+ 368              		.cfi_remember_state
+ 369              		.cfi_def_cfa_offset 4
+ 370              		@ sp needed
+ 371 0094 5DF804FB 		ldr	pc, [sp], #4
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 16
+
+
+ 372              	.L12:
+ 373              		.cfi_restore_state
+ 111:Core/Src/CANSPI.c ****   {
+ 374              		.loc 1 111 3 is_stmt 1 view .LVU157
+ 111:Core/Src/CANSPI.c ****   {
+ 375              		.loc 1 111 7 is_stmt 0 view .LVU158
+ 376 0098 FFF7FEFF 		bl	MCP2515_SetConfigMode
+ 377              	.LVL25:
+ 111:Core/Src/CANSPI.c ****   {
+ 378              		.loc 1 111 5 discriminator 1 view .LVU159
+ 379 009c 0346     		mov	r3, r0
+ 380 009e 0028     		cmp	r0, #0
+ 381 00a0 F6D0     		beq	.L10
+ 117:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXM1SIDH, MCP2515_RXM1EID0, &(RXM1reg.RXM1SIDH));
+ 382              		.loc 1 117 3 is_stmt 1 view .LVU160
+ 383 00a2 01AA     		add	r2, sp, #4
+ 384 00a4 2321     		movs	r1, #35
+ 385 00a6 2020     		movs	r0, #32
+ 386 00a8 FFF7FEFF 		bl	MCP2515_WriteByteSequence
+ 387              	.LVL26:
+ 118:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXF0SIDH, MCP2515_RXF0EID0, &(RXF0reg.RXF0SIDH));
+ 388              		.loc 1 118 3 view .LVU161
+ 389 00ac 6A46     		mov	r2, sp
+ 390 00ae 2721     		movs	r1, #39
+ 391 00b0 2420     		movs	r0, #36
+ 392 00b2 FFF7FEFF 		bl	MCP2515_WriteByteSequence
+ 393              	.LVL27:
+ 119:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXF1SIDH, MCP2515_RXF1EID0, &(RXF1reg.RXF1SIDH));
+ 394              		.loc 1 119 3 view .LVU162
+ 395 00b6 07AA     		add	r2, sp, #28
+ 396 00b8 0321     		movs	r1, #3
+ 397 00ba 0020     		movs	r0, #0
+ 398 00bc FFF7FEFF 		bl	MCP2515_WriteByteSequence
+ 399              	.LVL28:
+ 120:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXF2SIDH, MCP2515_RXF2EID0, &(RXF2reg.RXF2SIDH));
+ 400              		.loc 1 120 3 view .LVU163
+ 401 00c0 06AA     		add	r2, sp, #24
+ 402 00c2 0721     		movs	r1, #7
+ 403 00c4 0420     		movs	r0, #4
+ 404 00c6 FFF7FEFF 		bl	MCP2515_WriteByteSequence
+ 405              	.LVL29:
+ 121:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXF3SIDH, MCP2515_RXF3EID0, &(RXF3reg.RXF3SIDH));
+ 406              		.loc 1 121 3 view .LVU164
+ 407 00ca 05AA     		add	r2, sp, #20
+ 408 00cc 0B21     		movs	r1, #11
+ 409 00ce 0820     		movs	r0, #8
+ 410 00d0 FFF7FEFF 		bl	MCP2515_WriteByteSequence
+ 411              	.LVL30:
+ 122:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXF4SIDH, MCP2515_RXF4EID0, &(RXF4reg.RXF4SIDH));
+ 412              		.loc 1 122 3 view .LVU165
+ 413 00d4 04AA     		add	r2, sp, #16
+ 414 00d6 1321     		movs	r1, #19
+ 415 00d8 1020     		movs	r0, #16
+ 416 00da FFF7FEFF 		bl	MCP2515_WriteByteSequence
+ 417              	.LVL31:
+ 123:Core/Src/CANSPI.c ****   MCP2515_WriteByteSequence(MCP2515_RXF5SIDH, MCP2515_RXF5EID0, &(RXF5reg.RXF5SIDH));
+ 418              		.loc 1 123 3 view .LVU166
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 17
+
+
+ 419 00de 03AA     		add	r2, sp, #12
+ 420 00e0 1721     		movs	r1, #23
+ 421 00e2 1420     		movs	r0, #20
+ 422 00e4 FFF7FEFF 		bl	MCP2515_WriteByteSequence
+ 423              	.LVL32:
+ 124:Core/Src/CANSPI.c ****   
+ 424              		.loc 1 124 3 view .LVU167
+ 425 00e8 02AA     		add	r2, sp, #8
+ 426 00ea 1B21     		movs	r1, #27
+ 427 00ec 1820     		movs	r0, #24
+ 428 00ee FFF7FEFF 		bl	MCP2515_WriteByteSequence
+ 429              	.LVL33:
+ 127:Core/Src/CANSPI.c ****   MCP2515_WriteByte(MCP2515_RXB1CTRL, 0x01);    //Accept Filter 1
+ 430              		.loc 1 127 3 view .LVU168
+ 431 00f2 0421     		movs	r1, #4
+ 432 00f4 6020     		movs	r0, #96
+ 433 00f6 FFF7FEFF 		bl	MCP2515_WriteByte
+ 434              	.LVL34:
+ 128:Core/Src/CANSPI.c ****       
+ 435              		.loc 1 128 3 view .LVU169
+ 436 00fa 0121     		movs	r1, #1
+ 437 00fc 7020     		movs	r0, #112
+ 438 00fe FFF7FEFF 		bl	MCP2515_WriteByte
+ 439              	.LVL35:
+ 138:Core/Src/CANSPI.c ****   
+ 440              		.loc 1 138 3 view .LVU170
+ 441 0102 0021     		movs	r1, #0
+ 442 0104 2A20     		movs	r0, #42
+ 443 0106 FFF7FEFF 		bl	MCP2515_WriteByte
+ 444              	.LVL36:
+ 141:Core/Src/CANSPI.c ****   
+ 445              		.loc 1 141 3 view .LVU171
+ 446 010a E521     		movs	r1, #229
+ 447 010c 2920     		movs	r0, #41
+ 448 010e FFF7FEFF 		bl	MCP2515_WriteByte
+ 449              	.LVL37:
+ 144:Core/Src/CANSPI.c ****   
+ 450              		.loc 1 144 3 view .LVU172
+ 451 0112 8321     		movs	r1, #131
+ 452 0114 2820     		movs	r0, #40
+ 453 0116 FFF7FEFF 		bl	MCP2515_WriteByte
+ 454              	.LVL38:
+ 147:Core/Src/CANSPI.c ****     return false;
+ 455              		.loc 1 147 3 view .LVU173
+ 147:Core/Src/CANSPI.c ****     return false;
+ 456              		.loc 1 147 7 is_stmt 0 view .LVU174
+ 457 011a FFF7FEFF 		bl	MCP2515_SetNormalMode
+ 458              	.LVL39:
+ 459 011e 0346     		mov	r3, r0
+ 460 0120 B6E7     		b	.L10
+ 461              		.cfi_endproc
+ 462              	.LFE135:
+ 464              		.section	.text.CANSPI_Transmit,"ax",%progbits
+ 465              		.align	1
+ 466              		.global	CANSPI_Transmit
+ 467              		.syntax unified
+ 468              		.thumb
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 18
+
+
+ 469              		.thumb_func
+ 471              	CANSPI_Transmit:
+ 472              	.LVL40:
+ 473              	.LFB136:
+ 155:Core/Src/CANSPI.c ****   uint8_t returnValue = 0;
+ 474              		.loc 1 155 1 is_stmt 1 view -0
+ 475              		.cfi_startproc
+ 476              		@ args = 0, pretend = 0, frame = 0
+ 477              		@ frame_needed = 0, uses_anonymous_args = 0
+ 155:Core/Src/CANSPI.c ****   uint8_t returnValue = 0;
+ 478              		.loc 1 155 1 is_stmt 0 view .LVU176
+ 479 0000 38B5     		push	{r3, r4, r5, lr}
+ 480              		.cfi_def_cfa_offset 16
+ 481              		.cfi_offset 3, -16
+ 482              		.cfi_offset 4, -12
+ 483              		.cfi_offset 5, -8
+ 484              		.cfi_offset 14, -4
+ 485 0002 0446     		mov	r4, r0
+ 156:Core/Src/CANSPI.c ****   
+ 486              		.loc 1 156 3 is_stmt 1 view .LVU177
+ 487              	.LVL41:
+ 158:Core/Src/CANSPI.c ****   idReg.tempSIDL = 0;
+ 488              		.loc 1 158 3 view .LVU178
+ 158:Core/Src/CANSPI.c ****   idReg.tempSIDL = 0;
+ 489              		.loc 1 158 18 is_stmt 0 view .LVU179
+ 490 0004 254B     		ldr	r3, .L22
+ 491 0006 0022     		movs	r2, #0
+ 492 0008 1A70     		strb	r2, [r3]
+ 159:Core/Src/CANSPI.c ****   idReg.tempEID8 = 0;
+ 493              		.loc 1 159 3 is_stmt 1 view .LVU180
+ 159:Core/Src/CANSPI.c ****   idReg.tempEID8 = 0;
+ 494              		.loc 1 159 18 is_stmt 0 view .LVU181
+ 495 000a 5A70     		strb	r2, [r3, #1]
+ 160:Core/Src/CANSPI.c ****   idReg.tempEID0 = 0;
+ 496              		.loc 1 160 3 is_stmt 1 view .LVU182
+ 160:Core/Src/CANSPI.c ****   idReg.tempEID0 = 0;
+ 497              		.loc 1 160 18 is_stmt 0 view .LVU183
+ 498 000c 9A70     		strb	r2, [r3, #2]
+ 161:Core/Src/CANSPI.c ****   
+ 499              		.loc 1 161 3 is_stmt 1 view .LVU184
+ 161:Core/Src/CANSPI.c ****   
+ 500              		.loc 1 161 18 is_stmt 0 view .LVU185
+ 501 000e DA70     		strb	r2, [r3, #3]
+ 163:Core/Src/CANSPI.c ****   
+ 502              		.loc 1 163 3 is_stmt 1 view .LVU186
+ 163:Core/Src/CANSPI.c ****   
+ 503              		.loc 1 163 28 is_stmt 0 view .LVU187
+ 504 0010 FFF7FEFF 		bl	MCP2515_ReadStatus
+ 505              	.LVL42:
+ 163:Core/Src/CANSPI.c ****   
+ 506              		.loc 1 163 26 discriminator 1 view .LVU188
+ 507 0014 224B     		ldr	r3, .L22+4
+ 508 0016 1870     		strb	r0, [r3]
+ 166:Core/Src/CANSPI.c ****   {
+ 509              		.loc 1 166 3 is_stmt 1 view .LVU189
+ 166:Core/Src/CANSPI.c ****   {
+ 510              		.loc 1 166 6 is_stmt 0 view .LVU190
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 19
+
+
+ 511 0018 10F0040F 		tst	r0, #4
+ 512 001c 07D0     		beq	.L19
+ 179:Core/Src/CANSPI.c ****   {
+ 513              		.loc 1 179 8 is_stmt 1 view .LVU191
+ 179:Core/Src/CANSPI.c ****   {
+ 514              		.loc 1 179 11 is_stmt 0 view .LVU192
+ 515 001e 10F0100F 		tst	r0, #16
+ 516 0022 16D0     		beq	.L20
+ 188:Core/Src/CANSPI.c ****   {
+ 517              		.loc 1 188 8 is_stmt 1 view .LVU193
+ 188:Core/Src/CANSPI.c ****   {
+ 518              		.loc 1 188 11 is_stmt 0 view .LVU194
+ 519 0024 10F0400F 		tst	r0, #64
+ 520 0028 25D0     		beq	.L21
+ 156:Core/Src/CANSPI.c ****   
+ 521              		.loc 1 156 11 view .LVU195
+ 522 002a 0020     		movs	r0, #0
+ 523 002c 10E0     		b	.L15
+ 524              	.L19:
+ 169:Core/Src/CANSPI.c ****     
+ 525              		.loc 1 169 5 is_stmt 1 view .LVU196
+ 526 002e 1B4D     		ldr	r5, .L22
+ 527 0030 2A46     		mov	r2, r5
+ 528 0032 2178     		ldrb	r1, [r4]	@ zero_extendqisi2
+ 529 0034 6068     		ldr	r0, [r4, #4]
+ 530 0036 FFF7FEFF 		bl	convertCANid2Reg
+ 531              	.LVL43:
+ 172:Core/Src/CANSPI.c ****     
+ 532              		.loc 1 172 5 view .LVU197
+ 533 003a 04F10903 		add	r3, r4, #9
+ 534 003e 227A     		ldrb	r2, [r4, #8]	@ zero_extendqisi2
+ 535 0040 2946     		mov	r1, r5
+ 536 0042 4020     		movs	r0, #64
+ 537 0044 FFF7FEFF 		bl	MCP2515_LoadTxSequence
+ 538              	.LVL44:
+ 175:Core/Src/CANSPI.c ****     
+ 539              		.loc 1 175 5 view .LVU198
+ 540 0048 8120     		movs	r0, #129
+ 541 004a FFF7FEFF 		bl	MCP2515_RequestToSend
+ 542              	.LVL45:
+ 177:Core/Src/CANSPI.c ****   }
+ 543              		.loc 1 177 5 view .LVU199
+ 177:Core/Src/CANSPI.c ****   }
+ 544              		.loc 1 177 17 is_stmt 0 view .LVU200
+ 545 004e 0120     		movs	r0, #1
+ 546              	.LVL46:
+ 547              	.L15:
+ 198:Core/Src/CANSPI.c **** }
+ 548              		.loc 1 198 3 is_stmt 1 view .LVU201
+ 199:Core/Src/CANSPI.c **** 
+ 549              		.loc 1 199 1 is_stmt 0 view .LVU202
+ 550 0050 38BD     		pop	{r3, r4, r5, pc}
+ 551              	.LVL47:
+ 552              	.L20:
+ 181:Core/Src/CANSPI.c ****     
+ 553              		.loc 1 181 5 is_stmt 1 view .LVU203
+ 554 0052 124D     		ldr	r5, .L22
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 20
+
+
+ 555 0054 2A46     		mov	r2, r5
+ 556 0056 2178     		ldrb	r1, [r4]	@ zero_extendqisi2
+ 557 0058 6068     		ldr	r0, [r4, #4]
+ 558 005a FFF7FEFF 		bl	convertCANid2Reg
+ 559              	.LVL48:
+ 183:Core/Src/CANSPI.c ****     MCP2515_RequestToSend(MCP2515_RTS_TX1);
+ 560              		.loc 1 183 5 view .LVU204
+ 561 005e 04F10903 		add	r3, r4, #9
+ 562 0062 227A     		ldrb	r2, [r4, #8]	@ zero_extendqisi2
+ 563 0064 2946     		mov	r1, r5
+ 564 0066 4220     		movs	r0, #66
+ 565 0068 FFF7FEFF 		bl	MCP2515_LoadTxSequence
+ 566              	.LVL49:
+ 184:Core/Src/CANSPI.c ****     
+ 567              		.loc 1 184 5 view .LVU205
+ 568 006c 8220     		movs	r0, #130
+ 569 006e FFF7FEFF 		bl	MCP2515_RequestToSend
+ 570              	.LVL50:
+ 186:Core/Src/CANSPI.c ****   }
+ 571              		.loc 1 186 5 view .LVU206
+ 186:Core/Src/CANSPI.c ****   }
+ 572              		.loc 1 186 17 is_stmt 0 view .LVU207
+ 573 0072 0120     		movs	r0, #1
+ 574 0074 ECE7     		b	.L15
+ 575              	.LVL51:
+ 576              	.L21:
+ 190:Core/Src/CANSPI.c ****     
+ 577              		.loc 1 190 5 is_stmt 1 view .LVU208
+ 578 0076 094D     		ldr	r5, .L22
+ 579 0078 2A46     		mov	r2, r5
+ 580 007a 2178     		ldrb	r1, [r4]	@ zero_extendqisi2
+ 581 007c 6068     		ldr	r0, [r4, #4]
+ 582 007e FFF7FEFF 		bl	convertCANid2Reg
+ 583              	.LVL52:
+ 192:Core/Src/CANSPI.c ****     MCP2515_RequestToSend(MCP2515_RTS_TX2);
+ 584              		.loc 1 192 5 view .LVU209
+ 585 0082 04F10903 		add	r3, r4, #9
+ 586 0086 227A     		ldrb	r2, [r4, #8]	@ zero_extendqisi2
+ 587 0088 2946     		mov	r1, r5
+ 588 008a 4420     		movs	r0, #68
+ 589 008c FFF7FEFF 		bl	MCP2515_LoadTxSequence
+ 590              	.LVL53:
+ 193:Core/Src/CANSPI.c ****     
+ 591              		.loc 1 193 5 view .LVU210
+ 592 0090 8420     		movs	r0, #132
+ 593 0092 FFF7FEFF 		bl	MCP2515_RequestToSend
+ 594              	.LVL54:
+ 195:Core/Src/CANSPI.c ****   }
+ 595              		.loc 1 195 5 view .LVU211
+ 195:Core/Src/CANSPI.c ****   }
+ 596              		.loc 1 195 17 is_stmt 0 view .LVU212
+ 597 0096 0120     		movs	r0, #1
+ 598 0098 DAE7     		b	.L15
+ 599              	.L23:
+ 600 009a 00BF     		.align	2
+ 601              	.L22:
+ 602 009c 00000000 		.word	idReg
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 21
+
+
+ 603 00a0 00000000 		.word	ctrlStatus
+ 604              		.cfi_endproc
+ 605              	.LFE136:
+ 607              		.section	.text.CANSPI_Receive,"ax",%progbits
+ 608              		.align	1
+ 609              		.global	CANSPI_Receive
+ 610              		.syntax unified
+ 611              		.thumb
+ 612              		.thumb_func
+ 614              	CANSPI_Receive:
+ 615              	.LVL55:
+ 616              	.LFB137:
+ 203:Core/Src/CANSPI.c ****   uint8_t returnValue = 0;
+ 617              		.loc 1 203 1 is_stmt 1 view -0
+ 618              		.cfi_startproc
+ 619              		@ args = 0, pretend = 0, frame = 16
+ 620              		@ frame_needed = 0, uses_anonymous_args = 0
+ 203:Core/Src/CANSPI.c ****   uint8_t returnValue = 0;
+ 621              		.loc 1 203 1 is_stmt 0 view .LVU214
+ 622 0000 30B5     		push	{r4, r5, lr}
+ 623              		.cfi_def_cfa_offset 12
+ 624              		.cfi_offset 4, -12
+ 625              		.cfi_offset 5, -8
+ 626              		.cfi_offset 14, -4
+ 627 0002 85B0     		sub	sp, sp, #20
+ 628              		.cfi_def_cfa_offset 32
+ 629 0004 0446     		mov	r4, r0
+ 204:Core/Src/CANSPI.c ****   rx_reg_t rxReg;
+ 630              		.loc 1 204 3 is_stmt 1 view .LVU215
+ 631              	.LVL56:
+ 205:Core/Src/CANSPI.c ****   ctrl_rx_status_t rxStatus;
+ 632              		.loc 1 205 3 view .LVU216
+ 206:Core/Src/CANSPI.c ****   
+ 633              		.loc 1 206 3 view .LVU217
+ 208:Core/Src/CANSPI.c ****   
+ 634              		.loc 1 208 3 view .LVU218
+ 208:Core/Src/CANSPI.c ****   
+ 635              		.loc 1 208 29 is_stmt 0 view .LVU219
+ 636 0006 FFF7FEFF 		bl	MCP2515_GetRxStatus
+ 637              	.LVL57:
+ 211:Core/Src/CANSPI.c ****   {
+ 638              		.loc 1 211 3 is_stmt 1 view .LVU220
+ 211:Core/Src/CANSPI.c ****   {
+ 639              		.loc 1 211 6 is_stmt 0 view .LVU221
+ 640 000a 3F28     		cmp	r0, #63
+ 641 000c 4DD9     		bls	.L30
+ 642 000e 0546     		mov	r5, r0
+ 214:Core/Src/CANSPI.c ****     {
+ 643              		.loc 1 214 5 is_stmt 1 view .LVU222
+ 214:Core/Src/CANSPI.c ****     {
+ 644              		.loc 1 214 43 is_stmt 0 view .LVU223
+ 645 0010 00F0C003 		and	r3, r0, #192
+ 214:Core/Src/CANSPI.c ****     {
+ 646              		.loc 1 214 8 view .LVU224
+ 647 0014 C02B     		cmp	r3, #192
+ 648 0016 18BF     		it	ne
+ 649 0018 402B     		cmpne	r3, #64
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 22
+
+
+ 650 001a 2CD0     		beq	.L32
+ 218:Core/Src/CANSPI.c ****     {
+ 651              		.loc 1 218 10 is_stmt 1 view .LVU225
+ 218:Core/Src/CANSPI.c ****     {
+ 652              		.loc 1 218 13 is_stmt 0 view .LVU226
+ 653 001c 802B     		cmp	r3, #128
+ 654 001e 30D0     		beq	.L33
+ 655              	.L27:
+ 224:Core/Src/CANSPI.c ****     {
+ 656              		.loc 1 224 5 is_stmt 1 view .LVU227
+ 224:Core/Src/CANSPI.c ****     {
+ 657              		.loc 1 224 26 is_stmt 0 view .LVU228
+ 658 0020 05F01805 		and	r5, r5, #24
+ 224:Core/Src/CANSPI.c ****     {
+ 659              		.loc 1 224 8 view .LVU229
+ 660 0024 102D     		cmp	r5, #16
+ 661 0026 32D0     		beq	.L34
+ 232:Core/Src/CANSPI.c ****       tempCanMsg->frame.id = convertReg2StandardCANid(rxReg.RXBnSIDH, rxReg.RXBnSIDL);
+ 662              		.loc 1 232 7 is_stmt 1 view .LVU230
+ 232:Core/Src/CANSPI.c ****       tempCanMsg->frame.id = convertReg2StandardCANid(rxReg.RXBnSIDH, rxReg.RXBnSIDL);
+ 663              		.loc 1 232 32 is_stmt 0 view .LVU231
+ 664 0028 0123     		movs	r3, #1
+ 665 002a 2370     		strb	r3, [r4]
+ 233:Core/Src/CANSPI.c ****     }
+ 666              		.loc 1 233 7 is_stmt 1 view .LVU232
+ 233:Core/Src/CANSPI.c ****     }
+ 667              		.loc 1 233 30 is_stmt 0 view .LVU233
+ 668 002c 9DF80110 		ldrb	r1, [sp, #1]	@ zero_extendqisi2
+ 669 0030 9DF80000 		ldrb	r0, [sp]	@ zero_extendqisi2
+ 670 0034 FFF7FEFF 		bl	convertReg2StandardCANid
+ 671              	.LVL58:
+ 233:Core/Src/CANSPI.c ****     }
+ 672              		.loc 1 233 28 discriminator 1 view .LVU234
+ 673 0038 6060     		str	r0, [r4, #4]
+ 674              	.L29:
+ 236:Core/Src/CANSPI.c ****     tempCanMsg->frame.data0 = rxReg.RXBnD0;
+ 675              		.loc 1 236 5 is_stmt 1 view .LVU235
+ 236:Core/Src/CANSPI.c ****     tempCanMsg->frame.data0 = rxReg.RXBnD0;
+ 676              		.loc 1 236 36 is_stmt 0 view .LVU236
+ 677 003a 9DF80430 		ldrb	r3, [sp, #4]	@ zero_extendqisi2
+ 236:Core/Src/CANSPI.c ****     tempCanMsg->frame.data0 = rxReg.RXBnD0;
+ 678              		.loc 1 236 29 view .LVU237
+ 679 003e 2372     		strb	r3, [r4, #8]
+ 237:Core/Src/CANSPI.c ****     tempCanMsg->frame.data1 = rxReg.RXBnD1;
+ 680              		.loc 1 237 5 is_stmt 1 view .LVU238
+ 237:Core/Src/CANSPI.c ****     tempCanMsg->frame.data1 = rxReg.RXBnD1;
+ 681              		.loc 1 237 36 is_stmt 0 view .LVU239
+ 682 0040 9DF80530 		ldrb	r3, [sp, #5]	@ zero_extendqisi2
+ 237:Core/Src/CANSPI.c ****     tempCanMsg->frame.data1 = rxReg.RXBnD1;
+ 683              		.loc 1 237 29 view .LVU240
+ 684 0044 6372     		strb	r3, [r4, #9]
+ 238:Core/Src/CANSPI.c ****     tempCanMsg->frame.data2 = rxReg.RXBnD2;
+ 685              		.loc 1 238 5 is_stmt 1 view .LVU241
+ 238:Core/Src/CANSPI.c ****     tempCanMsg->frame.data2 = rxReg.RXBnD2;
+ 686              		.loc 1 238 36 is_stmt 0 view .LVU242
+ 687 0046 9DF80630 		ldrb	r3, [sp, #6]	@ zero_extendqisi2
+ 238:Core/Src/CANSPI.c ****     tempCanMsg->frame.data2 = rxReg.RXBnD2;
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 23
+
+
+ 688              		.loc 1 238 29 view .LVU243
+ 689 004a A372     		strb	r3, [r4, #10]
+ 239:Core/Src/CANSPI.c ****     tempCanMsg->frame.data3 = rxReg.RXBnD3;
+ 690              		.loc 1 239 5 is_stmt 1 view .LVU244
+ 239:Core/Src/CANSPI.c ****     tempCanMsg->frame.data3 = rxReg.RXBnD3;
+ 691              		.loc 1 239 36 is_stmt 0 view .LVU245
+ 692 004c 9DF80730 		ldrb	r3, [sp, #7]	@ zero_extendqisi2
+ 239:Core/Src/CANSPI.c ****     tempCanMsg->frame.data3 = rxReg.RXBnD3;
+ 693              		.loc 1 239 29 view .LVU246
+ 694 0050 E372     		strb	r3, [r4, #11]
+ 240:Core/Src/CANSPI.c ****     tempCanMsg->frame.data4 = rxReg.RXBnD4;
+ 695              		.loc 1 240 5 is_stmt 1 view .LVU247
+ 240:Core/Src/CANSPI.c ****     tempCanMsg->frame.data4 = rxReg.RXBnD4;
+ 696              		.loc 1 240 36 is_stmt 0 view .LVU248
+ 697 0052 9DF80830 		ldrb	r3, [sp, #8]	@ zero_extendqisi2
+ 240:Core/Src/CANSPI.c ****     tempCanMsg->frame.data4 = rxReg.RXBnD4;
+ 698              		.loc 1 240 29 view .LVU249
+ 699 0056 2373     		strb	r3, [r4, #12]
+ 241:Core/Src/CANSPI.c ****     tempCanMsg->frame.data5 = rxReg.RXBnD5;
+ 700              		.loc 1 241 5 is_stmt 1 view .LVU250
+ 241:Core/Src/CANSPI.c ****     tempCanMsg->frame.data5 = rxReg.RXBnD5;
+ 701              		.loc 1 241 36 is_stmt 0 view .LVU251
+ 702 0058 9DF80930 		ldrb	r3, [sp, #9]	@ zero_extendqisi2
+ 241:Core/Src/CANSPI.c ****     tempCanMsg->frame.data5 = rxReg.RXBnD5;
+ 703              		.loc 1 241 29 view .LVU252
+ 704 005c 6373     		strb	r3, [r4, #13]
+ 242:Core/Src/CANSPI.c ****     tempCanMsg->frame.data6 = rxReg.RXBnD6;
+ 705              		.loc 1 242 5 is_stmt 1 view .LVU253
+ 242:Core/Src/CANSPI.c ****     tempCanMsg->frame.data6 = rxReg.RXBnD6;
+ 706              		.loc 1 242 36 is_stmt 0 view .LVU254
+ 707 005e 9DF80A30 		ldrb	r3, [sp, #10]	@ zero_extendqisi2
+ 242:Core/Src/CANSPI.c ****     tempCanMsg->frame.data6 = rxReg.RXBnD6;
+ 708              		.loc 1 242 29 view .LVU255
+ 709 0062 A373     		strb	r3, [r4, #14]
+ 243:Core/Src/CANSPI.c ****     tempCanMsg->frame.data7 = rxReg.RXBnD7;
+ 710              		.loc 1 243 5 is_stmt 1 view .LVU256
+ 243:Core/Src/CANSPI.c ****     tempCanMsg->frame.data7 = rxReg.RXBnD7;
+ 711              		.loc 1 243 36 is_stmt 0 view .LVU257
+ 712 0064 9DF80B30 		ldrb	r3, [sp, #11]	@ zero_extendqisi2
+ 243:Core/Src/CANSPI.c ****     tempCanMsg->frame.data7 = rxReg.RXBnD7;
+ 713              		.loc 1 243 29 view .LVU258
+ 714 0068 E373     		strb	r3, [r4, #15]
+ 244:Core/Src/CANSPI.c ****     
+ 715              		.loc 1 244 5 is_stmt 1 view .LVU259
+ 244:Core/Src/CANSPI.c ****     
+ 716              		.loc 1 244 36 is_stmt 0 view .LVU260
+ 717 006a 9DF80C30 		ldrb	r3, [sp, #12]	@ zero_extendqisi2
+ 244:Core/Src/CANSPI.c ****     
+ 718              		.loc 1 244 29 view .LVU261
+ 719 006e 2374     		strb	r3, [r4, #16]
+ 246:Core/Src/CANSPI.c ****   }
+ 720              		.loc 1 246 5 is_stmt 1 view .LVU262
+ 721              	.LVL59:
+ 246:Core/Src/CANSPI.c ****   }
+ 722              		.loc 1 246 17 is_stmt 0 view .LVU263
+ 723 0070 0120     		movs	r0, #1
+ 724              	.LVL60:
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 24
+
+
+ 725              	.L25:
+ 249:Core/Src/CANSPI.c **** }
+ 726              		.loc 1 249 3 is_stmt 1 view .LVU264
+ 250:Core/Src/CANSPI.c **** 
+ 727              		.loc 1 250 1 is_stmt 0 view .LVU265
+ 728 0072 05B0     		add	sp, sp, #20
+ 729              		.cfi_remember_state
+ 730              		.cfi_def_cfa_offset 12
+ 731              		@ sp needed
+ 732 0074 30BD     		pop	{r4, r5, pc}
+ 733              	.LVL61:
+ 734              	.L32:
+ 735              		.cfi_restore_state
+ 216:Core/Src/CANSPI.c ****     }
+ 736              		.loc 1 216 7 is_stmt 1 view .LVU266
+ 737 0076 0D22     		movs	r2, #13
+ 738 0078 6946     		mov	r1, sp
+ 739 007a 9020     		movs	r0, #144
+ 740 007c FFF7FEFF 		bl	MCP2515_ReadRxSequence
+ 741              	.LVL62:
+ 742 0080 CEE7     		b	.L27
+ 743              	.L33:
+ 220:Core/Src/CANSPI.c ****     }
+ 744              		.loc 1 220 7 view .LVU267
+ 745 0082 0D22     		movs	r2, #13
+ 746 0084 6946     		mov	r1, sp
+ 747 0086 9420     		movs	r0, #148
+ 748 0088 FFF7FEFF 		bl	MCP2515_ReadRxSequence
+ 749              	.LVL63:
+ 750 008c C8E7     		b	.L27
+ 751              	.L34:
+ 226:Core/Src/CANSPI.c ****       tempCanMsg->frame.id = convertReg2ExtendedCANid(rxReg.RXBnEID8, rxReg.RXBnEID0, rxReg.RXBnSID
+ 752              		.loc 1 226 7 view .LVU268
+ 226:Core/Src/CANSPI.c ****       tempCanMsg->frame.id = convertReg2ExtendedCANid(rxReg.RXBnEID8, rxReg.RXBnEID0, rxReg.RXBnSID
+ 753              		.loc 1 226 32 is_stmt 0 view .LVU269
+ 754 008e 0223     		movs	r3, #2
+ 755 0090 2370     		strb	r3, [r4]
+ 227:Core/Src/CANSPI.c ****     } 
+ 756              		.loc 1 227 7 is_stmt 1 view .LVU270
+ 227:Core/Src/CANSPI.c ****     } 
+ 757              		.loc 1 227 30 is_stmt 0 view .LVU271
+ 758 0092 9DF80130 		ldrb	r3, [sp, #1]	@ zero_extendqisi2
+ 759 0096 9DF80020 		ldrb	r2, [sp]	@ zero_extendqisi2
+ 760 009a 9DF80310 		ldrb	r1, [sp, #3]	@ zero_extendqisi2
+ 761 009e 9DF80200 		ldrb	r0, [sp, #2]	@ zero_extendqisi2
+ 762 00a2 FFF7FEFF 		bl	convertReg2ExtendedCANid
+ 763              	.LVL64:
+ 227:Core/Src/CANSPI.c ****     } 
+ 764              		.loc 1 227 28 discriminator 1 view .LVU272
+ 765 00a6 6060     		str	r0, [r4, #4]
+ 766 00a8 C7E7     		b	.L29
+ 767              	.L30:
+ 204:Core/Src/CANSPI.c ****   rx_reg_t rxReg;
+ 768              		.loc 1 204 11 view .LVU273
+ 769 00aa 0020     		movs	r0, #0
+ 770 00ac E1E7     		b	.L25
+ 771              		.cfi_endproc
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 25
+
+
+ 772              	.LFE137:
+ 774              		.section	.text.CANSPI_messagesInBuffer,"ax",%progbits
+ 775              		.align	1
+ 776              		.global	CANSPI_messagesInBuffer
+ 777              		.syntax unified
+ 778              		.thumb
+ 779              		.thumb_func
+ 781              	CANSPI_messagesInBuffer:
+ 782              	.LFB138:
+ 254:Core/Src/CANSPI.c ****   uint8_t messageCount = 0;
+ 783              		.loc 1 254 1 is_stmt 1 view -0
+ 784              		.cfi_startproc
+ 785              		@ args = 0, pretend = 0, frame = 0
+ 786              		@ frame_needed = 0, uses_anonymous_args = 0
+ 787 0000 08B5     		push	{r3, lr}
+ 788              		.cfi_def_cfa_offset 8
+ 789              		.cfi_offset 3, -8
+ 790              		.cfi_offset 14, -4
+ 255:Core/Src/CANSPI.c ****   
+ 791              		.loc 1 255 3 view .LVU275
+ 792              	.LVL65:
+ 257:Core/Src/CANSPI.c ****   
+ 793              		.loc 1 257 3 view .LVU276
+ 257:Core/Src/CANSPI.c ****   
+ 794              		.loc 1 257 28 is_stmt 0 view .LVU277
+ 795 0002 FFF7FEFF 		bl	MCP2515_ReadStatus
+ 796              	.LVL66:
+ 797 0006 0346     		mov	r3, r0
+ 257:Core/Src/CANSPI.c ****   
+ 798              		.loc 1 257 26 discriminator 1 view .LVU278
+ 799 0008 054A     		ldr	r2, .L40
+ 800 000a 1070     		strb	r0, [r2]
+ 259:Core/Src/CANSPI.c ****   {
+ 801              		.loc 1 259 3 is_stmt 1 view .LVU279
+ 259:Core/Src/CANSPI.c ****   {
+ 802              		.loc 1 259 5 is_stmt 0 view .LVU280
+ 803 000c 10F00100 		ands	r0, r0, #1
+ 804 0010 00D0     		beq	.L36
+ 261:Core/Src/CANSPI.c ****   }
+ 805              		.loc 1 261 17 view .LVU281
+ 806 0012 0120     		movs	r0, #1
+ 807              	.L36:
+ 808              	.LVL67:
+ 264:Core/Src/CANSPI.c ****   {
+ 809              		.loc 1 264 3 is_stmt 1 view .LVU282
+ 264:Core/Src/CANSPI.c ****   {
+ 810              		.loc 1 264 5 is_stmt 0 view .LVU283
+ 811 0014 13F0020F 		tst	r3, #2
+ 812 0018 01D0     		beq	.L37
+ 266:Core/Src/CANSPI.c ****   }
+ 813              		.loc 1 266 5 is_stmt 1 view .LVU284
+ 266:Core/Src/CANSPI.c ****   }
+ 814              		.loc 1 266 17 is_stmt 0 view .LVU285
+ 815 001a 0130     		adds	r0, r0, #1
+ 816              	.LVL68:
+ 266:Core/Src/CANSPI.c ****   }
+ 817              		.loc 1 266 17 view .LVU286
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 26
+
+
+ 818 001c C0B2     		uxtb	r0, r0
+ 819              	.LVL69:
+ 820              	.L37:
+ 269:Core/Src/CANSPI.c **** }
+ 821              		.loc 1 269 3 is_stmt 1 view .LVU287
+ 270:Core/Src/CANSPI.c **** 
+ 822              		.loc 1 270 1 is_stmt 0 view .LVU288
+ 823 001e 08BD     		pop	{r3, pc}
+ 824              	.L41:
+ 825              		.align	2
+ 826              	.L40:
+ 827 0020 00000000 		.word	ctrlStatus
+ 828              		.cfi_endproc
+ 829              	.LFE138:
+ 831              		.section	.text.CANSPI_isBussOff,"ax",%progbits
+ 832              		.align	1
+ 833              		.global	CANSPI_isBussOff
+ 834              		.syntax unified
+ 835              		.thumb
+ 836              		.thumb_func
+ 838              	CANSPI_isBussOff:
+ 839              	.LFB139:
+ 274:Core/Src/CANSPI.c ****   uint8_t returnValue = 0;
+ 840              		.loc 1 274 1 is_stmt 1 view -0
+ 841              		.cfi_startproc
+ 842              		@ args = 0, pretend = 0, frame = 0
+ 843              		@ frame_needed = 0, uses_anonymous_args = 0
+ 844 0000 08B5     		push	{r3, lr}
+ 845              		.cfi_def_cfa_offset 8
+ 846              		.cfi_offset 3, -8
+ 847              		.cfi_offset 14, -4
+ 275:Core/Src/CANSPI.c ****   
+ 848              		.loc 1 275 3 view .LVU290
+ 849              	.LVL70:
+ 277:Core/Src/CANSPI.c ****   
+ 850              		.loc 1 277 3 view .LVU291
+ 277:Core/Src/CANSPI.c ****   
+ 851              		.loc 1 277 32 is_stmt 0 view .LVU292
+ 852 0002 2D20     		movs	r0, #45
+ 853 0004 FFF7FEFF 		bl	MCP2515_ReadByte
+ 854              	.LVL71:
+ 277:Core/Src/CANSPI.c ****   
+ 855              		.loc 1 277 30 discriminator 1 view .LVU293
+ 856 0008 034B     		ldr	r3, .L46
+ 857 000a 1870     		strb	r0, [r3]
+ 279:Core/Src/CANSPI.c ****   {
+ 858              		.loc 1 279 3 is_stmt 1 view .LVU294
+ 279:Core/Src/CANSPI.c ****   {
+ 859              		.loc 1 279 5 is_stmt 0 view .LVU295
+ 860 000c 10F02000 		ands	r0, r0, #32
+ 861 0010 00D0     		beq	.L43
+ 281:Core/Src/CANSPI.c ****   }
+ 862              		.loc 1 281 17 view .LVU296
+ 863 0012 0120     		movs	r0, #1
+ 864              	.L43:
+ 865              	.LVL72:
+ 284:Core/Src/CANSPI.c **** }
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 27
+
+
+ 866              		.loc 1 284 3 is_stmt 1 view .LVU297
+ 285:Core/Src/CANSPI.c **** 
+ 867              		.loc 1 285 1 is_stmt 0 view .LVU298
+ 868 0014 08BD     		pop	{r3, pc}
+ 869              	.L47:
+ 870 0016 00BF     		.align	2
+ 871              	.L46:
+ 872 0018 00000000 		.word	errorStatus
+ 873              		.cfi_endproc
+ 874              	.LFE139:
+ 876              		.section	.text.CANSPI_isRxErrorPassive,"ax",%progbits
+ 877              		.align	1
+ 878              		.global	CANSPI_isRxErrorPassive
+ 879              		.syntax unified
+ 880              		.thumb
+ 881              		.thumb_func
+ 883              	CANSPI_isRxErrorPassive:
+ 884              	.LFB140:
+ 289:Core/Src/CANSPI.c ****   uint8_t returnValue = 0;
+ 885              		.loc 1 289 1 is_stmt 1 view -0
+ 886              		.cfi_startproc
+ 887              		@ args = 0, pretend = 0, frame = 0
+ 888              		@ frame_needed = 0, uses_anonymous_args = 0
+ 889 0000 08B5     		push	{r3, lr}
+ 890              		.cfi_def_cfa_offset 8
+ 891              		.cfi_offset 3, -8
+ 892              		.cfi_offset 14, -4
+ 290:Core/Src/CANSPI.c ****   
+ 893              		.loc 1 290 3 view .LVU300
+ 894              	.LVL73:
+ 292:Core/Src/CANSPI.c ****   
+ 895              		.loc 1 292 3 view .LVU301
+ 292:Core/Src/CANSPI.c ****   
+ 896              		.loc 1 292 32 is_stmt 0 view .LVU302
+ 897 0002 2D20     		movs	r0, #45
+ 898 0004 FFF7FEFF 		bl	MCP2515_ReadByte
+ 899              	.LVL74:
+ 292:Core/Src/CANSPI.c ****   
+ 900              		.loc 1 292 30 discriminator 1 view .LVU303
+ 901 0008 034B     		ldr	r3, .L52
+ 902 000a 1870     		strb	r0, [r3]
+ 294:Core/Src/CANSPI.c ****   {
+ 903              		.loc 1 294 3 is_stmt 1 view .LVU304
+ 294:Core/Src/CANSPI.c ****   {
+ 904              		.loc 1 294 5 is_stmt 0 view .LVU305
+ 905 000c 10F00800 		ands	r0, r0, #8
+ 906 0010 00D0     		beq	.L49
+ 296:Core/Src/CANSPI.c ****   }
+ 907              		.loc 1 296 17 view .LVU306
+ 908 0012 0120     		movs	r0, #1
+ 909              	.L49:
+ 910              	.LVL75:
+ 299:Core/Src/CANSPI.c **** }
+ 911              		.loc 1 299 3 is_stmt 1 view .LVU307
+ 300:Core/Src/CANSPI.c **** 
+ 912              		.loc 1 300 1 is_stmt 0 view .LVU308
+ 913 0014 08BD     		pop	{r3, pc}
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 28
+
+
+ 914              	.L53:
+ 915 0016 00BF     		.align	2
+ 916              	.L52:
+ 917 0018 00000000 		.word	errorStatus
+ 918              		.cfi_endproc
+ 919              	.LFE140:
+ 921              		.section	.text.CANSPI_isTxErrorPassive,"ax",%progbits
+ 922              		.align	1
+ 923              		.global	CANSPI_isTxErrorPassive
+ 924              		.syntax unified
+ 925              		.thumb
+ 926              		.thumb_func
+ 928              	CANSPI_isTxErrorPassive:
+ 929              	.LFB141:
+ 304:Core/Src/CANSPI.c ****   uint8_t returnValue = 0;
+ 930              		.loc 1 304 1 is_stmt 1 view -0
+ 931              		.cfi_startproc
+ 932              		@ args = 0, pretend = 0, frame = 0
+ 933              		@ frame_needed = 0, uses_anonymous_args = 0
+ 934 0000 08B5     		push	{r3, lr}
+ 935              		.cfi_def_cfa_offset 8
+ 936              		.cfi_offset 3, -8
+ 937              		.cfi_offset 14, -4
+ 305:Core/Src/CANSPI.c ****   
+ 938              		.loc 1 305 3 view .LVU310
+ 939              	.LVL76:
+ 307:Core/Src/CANSPI.c ****   
+ 940              		.loc 1 307 3 view .LVU311
+ 307:Core/Src/CANSPI.c ****   
+ 941              		.loc 1 307 32 is_stmt 0 view .LVU312
+ 942 0002 2D20     		movs	r0, #45
+ 943 0004 FFF7FEFF 		bl	MCP2515_ReadByte
+ 944              	.LVL77:
+ 307:Core/Src/CANSPI.c ****   
+ 945              		.loc 1 307 30 discriminator 1 view .LVU313
+ 946 0008 034B     		ldr	r3, .L58
+ 947 000a 1870     		strb	r0, [r3]
+ 309:Core/Src/CANSPI.c ****   {
+ 948              		.loc 1 309 3 is_stmt 1 view .LVU314
+ 309:Core/Src/CANSPI.c ****   {
+ 949              		.loc 1 309 5 is_stmt 0 view .LVU315
+ 950 000c 10F01000 		ands	r0, r0, #16
+ 951 0010 00D0     		beq	.L55
+ 311:Core/Src/CANSPI.c ****   }
+ 952              		.loc 1 311 17 view .LVU316
+ 953 0012 0120     		movs	r0, #1
+ 954              	.L55:
+ 955              	.LVL78:
+ 314:Core/Src/CANSPI.c **** }
+ 956              		.loc 1 314 3 is_stmt 1 view .LVU317
+ 315:Core/Src/CANSPI.c **** 
+ 957              		.loc 1 315 1 is_stmt 0 view .LVU318
+ 958 0014 08BD     		pop	{r3, pc}
+ 959              	.L59:
+ 960 0016 00BF     		.align	2
+ 961              	.L58:
+ 962 0018 00000000 		.word	errorStatus
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 29
+
+
+ 963              		.cfi_endproc
+ 964              	.LFE141:
+ 966              		.global	idReg
+ 967              		.section	.bss.idReg,"aw",%nobits
+ 968              		.align	2
+ 971              	idReg:
+ 972 0000 00000000 		.space	4
+ 973              		.global	errorStatus
+ 974              		.section	.bss.errorStatus,"aw",%nobits
+ 975              		.align	2
+ 978              	errorStatus:
+ 979 0000 00000000 		.space	4
+ 980              		.global	ctrlStatus
+ 981              		.section	.bss.ctrlStatus,"aw",%nobits
+ 982              		.align	2
+ 985              	ctrlStatus:
+ 986 0000 00000000 		.space	4
+ 987              		.text
+ 988              	.Letext0:
+ 989              		.file 2 "C:/Users/Chronikle/AppData/Roaming/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-de
+ 990              		.file 3 "C:/Users/Chronikle/AppData/Roaming/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-de
+ 991              		.file 4 "Core/Inc/CANSPI.h"
+ 992              		.file 5 "Core/Inc/MCP2515.h"
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s 			page 30
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 CANSPI.c
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:21     .text.convertReg2ExtendedCANid:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:26     .text.convertReg2ExtendedCANid:00000000 convertReg2ExtendedCANid
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:74     .text.convertReg2StandardCANid:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:79     .text.convertReg2StandardCANid:00000000 convertReg2StandardCANid
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:105    .text.convertCANid2Reg:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:110    .text.convertCANid2Reg:00000000 convertCANid2Reg
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:197    .text.CANSPI_Sleep:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:203    .text.CANSPI_Sleep:00000000 CANSPI_Sleep
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:234    .text.CANSPI_Initialize:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:240    .text.CANSPI_Initialize:00000000 CANSPI_Initialize
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:465    .text.CANSPI_Transmit:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:471    .text.CANSPI_Transmit:00000000 CANSPI_Transmit
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:602    .text.CANSPI_Transmit:0000009c $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:971    .bss.idReg:00000000 idReg
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:985    .bss.ctrlStatus:00000000 ctrlStatus
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:608    .text.CANSPI_Receive:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:614    .text.CANSPI_Receive:00000000 CANSPI_Receive
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:775    .text.CANSPI_messagesInBuffer:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:781    .text.CANSPI_messagesInBuffer:00000000 CANSPI_messagesInBuffer
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:827    .text.CANSPI_messagesInBuffer:00000020 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:832    .text.CANSPI_isBussOff:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:838    .text.CANSPI_isBussOff:00000000 CANSPI_isBussOff
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:872    .text.CANSPI_isBussOff:00000018 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:978    .bss.errorStatus:00000000 errorStatus
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:877    .text.CANSPI_isRxErrorPassive:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:883    .text.CANSPI_isRxErrorPassive:00000000 CANSPI_isRxErrorPassive
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:917    .text.CANSPI_isRxErrorPassive:00000018 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:922    .text.CANSPI_isTxErrorPassive:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:928    .text.CANSPI_isTxErrorPassive:00000000 CANSPI_isTxErrorPassive
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:962    .text.CANSPI_isTxErrorPassive:00000018 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:968    .bss.idReg:00000000 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:975    .bss.errorStatus:00000000 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccNCxVaE.s:982    .bss.ctrlStatus:00000000 $d
+
+UNDEFINED SYMBOLS
+MCP2515_BitModify
+MCP2515_SetSleepMode
+MCP2515_Initialize
+MCP2515_SetConfigMode
+MCP2515_WriteByteSequence
+MCP2515_WriteByte
+MCP2515_SetNormalMode
+MCP2515_ReadStatus
+MCP2515_LoadTxSequence
+MCP2515_RequestToSend
+MCP2515_GetRxStatus
+MCP2515_ReadRxSequence
+MCP2515_ReadByte

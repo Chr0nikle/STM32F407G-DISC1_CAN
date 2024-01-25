@@ -1,0 +1,1661 @@
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"MCP2515.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "Core/Src/MCP2515.c"
+  20              		.section	.text.SPI_Tx,"ax",%progbits
+  21              		.align	1
+  22              		.syntax unified
+  23              		.thumb
+  24              		.thumb_func
+  26              	SPI_Tx:
+  27              	.LVL0:
+  28              	.LFB149:
+   1:Core/Src/MCP2515.c **** /*
+   2:Core/Src/MCP2515.c ****     (c) 2016 Microchip Technology Inc. and its subsidiaries. You may use this
+   3:Core/Src/MCP2515.c ****     software and any derivatives exclusively with Microchip products.
+   4:Core/Src/MCP2515.c **** 
+   5:Core/Src/MCP2515.c ****     THIS SOFTWARE IS SUPPLIED BY MICROCHIP "AS IS". NO WARRANTIES, WHETHER
+   6:Core/Src/MCP2515.c ****     EXPRESS, IMPLIED OR STATUTORY, APPLY TO THIS SOFTWARE, INCLUDING ANY IMPLIED
+   7:Core/Src/MCP2515.c ****     WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A
+   8:Core/Src/MCP2515.c ****     PARTICULAR PURPOSE, OR ITS INTERACTION WITH MICROCHIP PRODUCTS, COMBINATION
+   9:Core/Src/MCP2515.c ****     WITH ANY OTHER PRODUCTS, OR USE IN ANY APPLICATION.
+  10:Core/Src/MCP2515.c **** 
+  11:Core/Src/MCP2515.c ****     IN NO EVENT WILL MICROCHIP BE LIABLE FOR ANY INDIRECT, SPECIAL, PUNITIVE,
+  12:Core/Src/MCP2515.c ****     INCIDENTAL OR CONSEQUENTIAL LOSS, DAMAGE, COST OR EXPENSE OF ANY KIND
+  13:Core/Src/MCP2515.c ****     WHATSOEVER RELATED TO THE SOFTWARE, HOWEVER CAUSED, EVEN IF MICROCHIP HAS
+  14:Core/Src/MCP2515.c ****     BEEN ADVISED OF THE POSSIBILITY OR THE DAMAGES ARE FORESEEABLE. TO THE
+  15:Core/Src/MCP2515.c ****     FULLEST EXTENT ALLOWED BY LAW, MICROCHIP'S TOTAL LIABILITY ON ALL CLAIMS IN
+  16:Core/Src/MCP2515.c ****     ANY WAY RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT OF FEES, IF ANY,
+  17:Core/Src/MCP2515.c ****     THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
+  18:Core/Src/MCP2515.c **** 
+  19:Core/Src/MCP2515.c ****     MICROCHIP PROVIDES THIS SOFTWARE CONDITIONALLY UPON YOUR ACCEPTANCE OF THESE
+  20:Core/Src/MCP2515.c ****     TERMS.
+  21:Core/Src/MCP2515.c **** */
+  22:Core/Src/MCP2515.c **** 
+  23:Core/Src/MCP2515.c **** #include "MCP2515.h"
+  24:Core/Src/MCP2515.c **** 
+  25:Core/Src/MCP2515.c **** /* SPI related variables */
+  26:Core/Src/MCP2515.c **** extern SPI_HandleTypeDef        hspi1;
+  27:Core/Src/MCP2515.c **** #define SPI_CAN                 &hspi1
+  28:Core/Src/MCP2515.c **** #define SPI_TIMEOUT             10
+  29:Core/Src/MCP2515.c **** #define MCP2515_CS_HIGH()   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET)
+  30:Core/Src/MCP2515.c **** #define MCP2515_CS_LOW()    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET)
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 2
+
+
+  31:Core/Src/MCP2515.c **** 
+  32:Core/Src/MCP2515.c **** /* Prototypes */
+  33:Core/Src/MCP2515.c **** static void SPI_Tx(uint8_t data);
+  34:Core/Src/MCP2515.c **** static void SPI_TxBuffer(uint8_t *buffer, uint8_t length);
+  35:Core/Src/MCP2515.c **** static uint8_t SPI_Rx(void);
+  36:Core/Src/MCP2515.c **** static void SPI_RxBuffer(uint8_t *buffer, uint8_t length);
+  37:Core/Src/MCP2515.c **** 
+  38:Core/Src/MCP2515.c **** /* initialize MCP2515 */
+  39:Core/Src/MCP2515.c **** bool MCP2515_Initialize(void)
+  40:Core/Src/MCP2515.c **** {
+  41:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();    
+  42:Core/Src/MCP2515.c ****   
+  43:Core/Src/MCP2515.c ****   uint8_t loop = 10;
+  44:Core/Src/MCP2515.c ****   
+  45:Core/Src/MCP2515.c ****   do {
+  46:Core/Src/MCP2515.c ****     /* check SPI Ready */
+  47:Core/Src/MCP2515.c ****     if(HAL_SPI_GetState(SPI_CAN) == HAL_SPI_STATE_READY)
+  48:Core/Src/MCP2515.c ****       return true;
+  49:Core/Src/MCP2515.c ****     
+  50:Core/Src/MCP2515.c ****     loop--;
+  51:Core/Src/MCP2515.c ****   } while(loop > 0); 
+  52:Core/Src/MCP2515.c ****       
+  53:Core/Src/MCP2515.c ****   return false;
+  54:Core/Src/MCP2515.c **** }
+  55:Core/Src/MCP2515.c **** 
+  56:Core/Src/MCP2515.c **** /* change mode as configuration mode */
+  57:Core/Src/MCP2515.c **** bool MCP2515_SetConfigMode(void)
+  58:Core/Src/MCP2515.c **** {
+  59:Core/Src/MCP2515.c ****   /* configure CANCTRL Register */
+  60:Core/Src/MCP2515.c ****   MCP2515_WriteByte(MCP2515_CANCTRL, 0x80);
+  61:Core/Src/MCP2515.c ****   
+  62:Core/Src/MCP2515.c ****   uint8_t loop = 10;
+  63:Core/Src/MCP2515.c ****   
+  64:Core/Src/MCP2515.c ****   do {    
+  65:Core/Src/MCP2515.c ****     /* confirm mode configuration */
+  66:Core/Src/MCP2515.c ****     if((MCP2515_ReadByte(MCP2515_CANSTAT) & 0xE0) == 0x80)
+  67:Core/Src/MCP2515.c ****       return true;
+  68:Core/Src/MCP2515.c ****     
+  69:Core/Src/MCP2515.c ****     loop--;
+  70:Core/Src/MCP2515.c ****   } while(loop > 0); 
+  71:Core/Src/MCP2515.c ****   
+  72:Core/Src/MCP2515.c ****   return false;
+  73:Core/Src/MCP2515.c **** }
+  74:Core/Src/MCP2515.c **** 
+  75:Core/Src/MCP2515.c **** /* change mode as normal mode */
+  76:Core/Src/MCP2515.c **** bool MCP2515_SetNormalMode(void)
+  77:Core/Src/MCP2515.c **** {
+  78:Core/Src/MCP2515.c ****   /* configure CANCTRL Register */
+  79:Core/Src/MCP2515.c ****   MCP2515_WriteByte(MCP2515_CANCTRL, 0x00);
+  80:Core/Src/MCP2515.c ****   
+  81:Core/Src/MCP2515.c ****   uint8_t loop = 10;
+  82:Core/Src/MCP2515.c ****   
+  83:Core/Src/MCP2515.c ****   do {    
+  84:Core/Src/MCP2515.c ****     /* confirm mode configuration */
+  85:Core/Src/MCP2515.c ****     if((MCP2515_ReadByte(MCP2515_CANSTAT) & 0xE0) == 0x00)
+  86:Core/Src/MCP2515.c ****       return true;
+  87:Core/Src/MCP2515.c ****     
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 3
+
+
+  88:Core/Src/MCP2515.c ****     loop--;
+  89:Core/Src/MCP2515.c ****   } while(loop > 0);
+  90:Core/Src/MCP2515.c ****   
+  91:Core/Src/MCP2515.c ****   return false;
+  92:Core/Src/MCP2515.c **** }
+  93:Core/Src/MCP2515.c **** 
+  94:Core/Src/MCP2515.c **** /* Entering sleep mode */
+  95:Core/Src/MCP2515.c **** bool MCP2515_SetSleepMode(void)
+  96:Core/Src/MCP2515.c **** {
+  97:Core/Src/MCP2515.c ****   /* configure CANCTRL Register */
+  98:Core/Src/MCP2515.c ****   MCP2515_WriteByte(MCP2515_CANCTRL, 0x20);
+  99:Core/Src/MCP2515.c ****   
+ 100:Core/Src/MCP2515.c ****   uint8_t loop = 10;
+ 101:Core/Src/MCP2515.c ****   
+ 102:Core/Src/MCP2515.c ****   do {    
+ 103:Core/Src/MCP2515.c ****     /* confirm mode configuration */
+ 104:Core/Src/MCP2515.c ****     if((MCP2515_ReadByte(MCP2515_CANSTAT) & 0xE0) == 0x20)
+ 105:Core/Src/MCP2515.c ****       return true;
+ 106:Core/Src/MCP2515.c ****     
+ 107:Core/Src/MCP2515.c ****     loop--;
+ 108:Core/Src/MCP2515.c ****   } while(loop > 0);
+ 109:Core/Src/MCP2515.c ****   
+ 110:Core/Src/MCP2515.c ****   return false;
+ 111:Core/Src/MCP2515.c **** }
+ 112:Core/Src/MCP2515.c **** 
+ 113:Core/Src/MCP2515.c **** /* MCP2515 SPI-Reset */
+ 114:Core/Src/MCP2515.c **** void MCP2515_Reset(void)
+ 115:Core/Src/MCP2515.c **** {    
+ 116:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 117:Core/Src/MCP2515.c ****       
+ 118:Core/Src/MCP2515.c ****   SPI_Tx(MCP2515_RESET);
+ 119:Core/Src/MCP2515.c ****       
+ 120:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();
+ 121:Core/Src/MCP2515.c **** }
+ 122:Core/Src/MCP2515.c **** 
+ 123:Core/Src/MCP2515.c **** /* read single byte */
+ 124:Core/Src/MCP2515.c **** uint8_t MCP2515_ReadByte (uint8_t address)
+ 125:Core/Src/MCP2515.c **** {
+ 126:Core/Src/MCP2515.c ****   uint8_t retVal;
+ 127:Core/Src/MCP2515.c ****   
+ 128:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 129:Core/Src/MCP2515.c ****   
+ 130:Core/Src/MCP2515.c ****   SPI_Tx(MCP2515_READ);
+ 131:Core/Src/MCP2515.c ****   SPI_Tx(address);
+ 132:Core/Src/MCP2515.c ****   retVal = SPI_Rx();
+ 133:Core/Src/MCP2515.c ****       
+ 134:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();
+ 135:Core/Src/MCP2515.c ****   
+ 136:Core/Src/MCP2515.c ****   return retVal;
+ 137:Core/Src/MCP2515.c **** }
+ 138:Core/Src/MCP2515.c **** 
+ 139:Core/Src/MCP2515.c **** /* read buffer */
+ 140:Core/Src/MCP2515.c **** void MCP2515_ReadRxSequence(uint8_t instruction, uint8_t *data, uint8_t length)
+ 141:Core/Src/MCP2515.c **** {
+ 142:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 143:Core/Src/MCP2515.c ****   
+ 144:Core/Src/MCP2515.c ****   SPI_Tx(instruction);        
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 4
+
+
+ 145:Core/Src/MCP2515.c ****   SPI_RxBuffer(data, length);
+ 146:Core/Src/MCP2515.c ****     
+ 147:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();
+ 148:Core/Src/MCP2515.c **** }
+ 149:Core/Src/MCP2515.c **** 
+ 150:Core/Src/MCP2515.c **** /* write single byte */
+ 151:Core/Src/MCP2515.c **** void MCP2515_WriteByte(uint8_t address, uint8_t data)
+ 152:Core/Src/MCP2515.c **** {    
+ 153:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();  
+ 154:Core/Src/MCP2515.c ****   
+ 155:Core/Src/MCP2515.c ****   SPI_Tx(MCP2515_WRITE);
+ 156:Core/Src/MCP2515.c ****   SPI_Tx(address);
+ 157:Core/Src/MCP2515.c ****   SPI_Tx(data);  
+ 158:Core/Src/MCP2515.c ****     
+ 159:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();
+ 160:Core/Src/MCP2515.c **** }
+ 161:Core/Src/MCP2515.c **** 
+ 162:Core/Src/MCP2515.c **** /* write buffer */
+ 163:Core/Src/MCP2515.c **** void MCP2515_WriteByteSequence(uint8_t startAddress, uint8_t endAddress, uint8_t *data)
+ 164:Core/Src/MCP2515.c **** {    
+ 165:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 166:Core/Src/MCP2515.c ****   
+ 167:Core/Src/MCP2515.c ****   SPI_Tx(MCP2515_WRITE);
+ 168:Core/Src/MCP2515.c ****   SPI_Tx(startAddress);
+ 169:Core/Src/MCP2515.c ****   SPI_TxBuffer(data, (endAddress - startAddress + 1));
+ 170:Core/Src/MCP2515.c ****   
+ 171:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();
+ 172:Core/Src/MCP2515.c **** }
+ 173:Core/Src/MCP2515.c **** 
+ 174:Core/Src/MCP2515.c **** /* write to TxBuffer */
+ 175:Core/Src/MCP2515.c **** void MCP2515_LoadTxSequence(uint8_t instruction, uint8_t *idReg, uint8_t dlc, uint8_t *data)
+ 176:Core/Src/MCP2515.c **** {    
+ 177:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 178:Core/Src/MCP2515.c ****   
+ 179:Core/Src/MCP2515.c ****   SPI_Tx(instruction);
+ 180:Core/Src/MCP2515.c ****   SPI_TxBuffer(idReg, 4);
+ 181:Core/Src/MCP2515.c ****   SPI_Tx(dlc);
+ 182:Core/Src/MCP2515.c ****   SPI_TxBuffer(data, dlc);
+ 183:Core/Src/MCP2515.c ****        
+ 184:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();
+ 185:Core/Src/MCP2515.c **** }
+ 186:Core/Src/MCP2515.c **** 
+ 187:Core/Src/MCP2515.c **** /* write to TxBuffer(1 byte) */
+ 188:Core/Src/MCP2515.c **** void MCP2515_LoadTxBuffer(uint8_t instruction, uint8_t data)
+ 189:Core/Src/MCP2515.c **** {
+ 190:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 191:Core/Src/MCP2515.c ****   
+ 192:Core/Src/MCP2515.c ****   SPI_Tx(instruction);
+ 193:Core/Src/MCP2515.c ****   SPI_Tx(data);
+ 194:Core/Src/MCP2515.c ****         
+ 195:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();
+ 196:Core/Src/MCP2515.c **** }
+ 197:Core/Src/MCP2515.c **** 
+ 198:Core/Src/MCP2515.c **** /* request to send */
+ 199:Core/Src/MCP2515.c **** void MCP2515_RequestToSend(uint8_t instruction)
+ 200:Core/Src/MCP2515.c **** {
+ 201:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 5
+
+
+ 202:Core/Src/MCP2515.c ****   
+ 203:Core/Src/MCP2515.c ****   SPI_Tx(instruction);
+ 204:Core/Src/MCP2515.c ****       
+ 205:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();
+ 206:Core/Src/MCP2515.c **** }
+ 207:Core/Src/MCP2515.c **** 
+ 208:Core/Src/MCP2515.c **** /* read status */
+ 209:Core/Src/MCP2515.c **** uint8_t MCP2515_ReadStatus(void)
+ 210:Core/Src/MCP2515.c **** {
+ 211:Core/Src/MCP2515.c ****   uint8_t retVal;
+ 212:Core/Src/MCP2515.c ****   
+ 213:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 214:Core/Src/MCP2515.c ****   
+ 215:Core/Src/MCP2515.c ****   SPI_Tx(MCP2515_READ_STATUS);
+ 216:Core/Src/MCP2515.c ****   retVal = SPI_Rx();
+ 217:Core/Src/MCP2515.c ****         
+ 218:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();
+ 219:Core/Src/MCP2515.c ****   
+ 220:Core/Src/MCP2515.c ****   return retVal;
+ 221:Core/Src/MCP2515.c **** }
+ 222:Core/Src/MCP2515.c **** 
+ 223:Core/Src/MCP2515.c **** /* read RX STATUS register */
+ 224:Core/Src/MCP2515.c **** uint8_t MCP2515_GetRxStatus(void)
+ 225:Core/Src/MCP2515.c **** {
+ 226:Core/Src/MCP2515.c ****   uint8_t retVal;
+ 227:Core/Src/MCP2515.c ****   
+ 228:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 229:Core/Src/MCP2515.c ****   
+ 230:Core/Src/MCP2515.c ****   SPI_Tx(MCP2515_RX_STATUS);
+ 231:Core/Src/MCP2515.c ****   retVal = SPI_Rx();
+ 232:Core/Src/MCP2515.c ****         
+ 233:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();
+ 234:Core/Src/MCP2515.c ****   
+ 235:Core/Src/MCP2515.c ****   return retVal;
+ 236:Core/Src/MCP2515.c **** }
+ 237:Core/Src/MCP2515.c **** 
+ 238:Core/Src/MCP2515.c **** /* Use when changing register value */
+ 239:Core/Src/MCP2515.c **** void MCP2515_BitModify(uint8_t address, uint8_t mask, uint8_t data)
+ 240:Core/Src/MCP2515.c **** {    
+ 241:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 242:Core/Src/MCP2515.c ****   
+ 243:Core/Src/MCP2515.c ****   SPI_Tx(MCP2515_BIT_MOD);
+ 244:Core/Src/MCP2515.c ****   SPI_Tx(address);
+ 245:Core/Src/MCP2515.c ****   SPI_Tx(mask);
+ 246:Core/Src/MCP2515.c ****   SPI_Tx(data);
+ 247:Core/Src/MCP2515.c ****         
+ 248:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();
+ 249:Core/Src/MCP2515.c **** }
+ 250:Core/Src/MCP2515.c **** 
+ 251:Core/Src/MCP2515.c **** /* SPI Tx wrapper function  */
+ 252:Core/Src/MCP2515.c **** static void SPI_Tx(uint8_t data)
+ 253:Core/Src/MCP2515.c **** {
+  29              		.loc 1 253 1 view -0
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 8
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33              		.loc 1 253 1 is_stmt 0 view .LVU1
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 6
+
+
+  34 0000 00B5     		push	{lr}
+  35              		.cfi_def_cfa_offset 4
+  36              		.cfi_offset 14, -4
+  37 0002 83B0     		sub	sp, sp, #12
+  38              		.cfi_def_cfa_offset 16
+  39 0004 8DF80700 		strb	r0, [sp, #7]
+ 254:Core/Src/MCP2515.c ****   HAL_SPI_Transmit(SPI_CAN, &data, 1, SPI_TIMEOUT);    
+  40              		.loc 1 254 3 is_stmt 1 view .LVU2
+  41 0008 0A23     		movs	r3, #10
+  42 000a 0122     		movs	r2, #1
+  43 000c 0DF10701 		add	r1, sp, #7
+  44 0010 0248     		ldr	r0, .L3
+  45              	.LVL1:
+  46              		.loc 1 254 3 is_stmt 0 view .LVU3
+  47 0012 FFF7FEFF 		bl	HAL_SPI_Transmit
+  48              	.LVL2:
+ 255:Core/Src/MCP2515.c **** }
+  49              		.loc 1 255 1 view .LVU4
+  50 0016 03B0     		add	sp, sp, #12
+  51              		.cfi_def_cfa_offset 4
+  52              		@ sp needed
+  53 0018 5DF804FB 		ldr	pc, [sp], #4
+  54              	.L4:
+  55              		.align	2
+  56              	.L3:
+  57 001c 00000000 		.word	hspi1
+  58              		.cfi_endproc
+  59              	.LFE149:
+  61              		.section	.text.SPI_TxBuffer,"ax",%progbits
+  62              		.align	1
+  63              		.syntax unified
+  64              		.thumb
+  65              		.thumb_func
+  67              	SPI_TxBuffer:
+  68              	.LVL3:
+  69              	.LFB150:
+ 256:Core/Src/MCP2515.c **** 
+ 257:Core/Src/MCP2515.c **** /* SPI Tx wrapper function */
+ 258:Core/Src/MCP2515.c **** static void SPI_TxBuffer(uint8_t *buffer, uint8_t length)
+ 259:Core/Src/MCP2515.c **** {
+  70              		.loc 1 259 1 is_stmt 1 view -0
+  71              		.cfi_startproc
+  72              		@ args = 0, pretend = 0, frame = 0
+  73              		@ frame_needed = 0, uses_anonymous_args = 0
+  74              		.loc 1 259 1 is_stmt 0 view .LVU6
+  75 0000 08B5     		push	{r3, lr}
+  76              		.cfi_def_cfa_offset 8
+  77              		.cfi_offset 3, -8
+  78              		.cfi_offset 14, -4
+  79 0002 0A46     		mov	r2, r1
+ 260:Core/Src/MCP2515.c ****   HAL_SPI_Transmit(SPI_CAN, buffer, length, SPI_TIMEOUT);    
+  80              		.loc 1 260 3 is_stmt 1 view .LVU7
+  81 0004 0A23     		movs	r3, #10
+  82 0006 0146     		mov	r1, r0
+  83              	.LVL4:
+  84              		.loc 1 260 3 is_stmt 0 view .LVU8
+  85 0008 0148     		ldr	r0, .L7
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 7
+
+
+  86              	.LVL5:
+  87              		.loc 1 260 3 view .LVU9
+  88 000a FFF7FEFF 		bl	HAL_SPI_Transmit
+  89              	.LVL6:
+ 261:Core/Src/MCP2515.c **** }
+  90              		.loc 1 261 1 view .LVU10
+  91 000e 08BD     		pop	{r3, pc}
+  92              	.L8:
+  93              		.align	2
+  94              	.L7:
+  95 0010 00000000 		.word	hspi1
+  96              		.cfi_endproc
+  97              	.LFE150:
+  99              		.section	.text.SPI_Rx,"ax",%progbits
+ 100              		.align	1
+ 101              		.syntax unified
+ 102              		.thumb
+ 103              		.thumb_func
+ 105              	SPI_Rx:
+ 106              	.LFB151:
+ 262:Core/Src/MCP2515.c **** 
+ 263:Core/Src/MCP2515.c **** /* SPI Rx wrapper function */
+ 264:Core/Src/MCP2515.c **** static uint8_t SPI_Rx(void)
+ 265:Core/Src/MCP2515.c **** {
+ 107              		.loc 1 265 1 is_stmt 1 view -0
+ 108              		.cfi_startproc
+ 109              		@ args = 0, pretend = 0, frame = 8
+ 110              		@ frame_needed = 0, uses_anonymous_args = 0
+ 111 0000 00B5     		push	{lr}
+ 112              		.cfi_def_cfa_offset 4
+ 113              		.cfi_offset 14, -4
+ 114 0002 83B0     		sub	sp, sp, #12
+ 115              		.cfi_def_cfa_offset 16
+ 266:Core/Src/MCP2515.c ****   uint8_t retVal;
+ 116              		.loc 1 266 3 view .LVU12
+ 267:Core/Src/MCP2515.c ****   HAL_SPI_Receive(SPI_CAN, &retVal, 1, SPI_TIMEOUT);
+ 117              		.loc 1 267 3 view .LVU13
+ 118 0004 0A23     		movs	r3, #10
+ 119 0006 0122     		movs	r2, #1
+ 120 0008 0DF10701 		add	r1, sp, #7
+ 121 000c 0348     		ldr	r0, .L11
+ 122 000e FFF7FEFF 		bl	HAL_SPI_Receive
+ 123              	.LVL7:
+ 268:Core/Src/MCP2515.c ****   return retVal;
+ 124              		.loc 1 268 3 view .LVU14
+ 269:Core/Src/MCP2515.c **** }
+ 125              		.loc 1 269 1 is_stmt 0 view .LVU15
+ 126 0012 9DF80700 		ldrb	r0, [sp, #7]	@ zero_extendqisi2
+ 127 0016 03B0     		add	sp, sp, #12
+ 128              		.cfi_def_cfa_offset 4
+ 129              		@ sp needed
+ 130 0018 5DF804FB 		ldr	pc, [sp], #4
+ 131              	.L12:
+ 132              		.align	2
+ 133              	.L11:
+ 134 001c 00000000 		.word	hspi1
+ 135              		.cfi_endproc
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 8
+
+
+ 136              	.LFE151:
+ 138              		.section	.text.SPI_RxBuffer,"ax",%progbits
+ 139              		.align	1
+ 140              		.syntax unified
+ 141              		.thumb
+ 142              		.thumb_func
+ 144              	SPI_RxBuffer:
+ 145              	.LVL8:
+ 146              	.LFB152:
+ 270:Core/Src/MCP2515.c **** 
+ 271:Core/Src/MCP2515.c **** /* SPI Rx wrapper function */
+ 272:Core/Src/MCP2515.c **** static void SPI_RxBuffer(uint8_t *buffer, uint8_t length)
+ 273:Core/Src/MCP2515.c **** {
+ 147              		.loc 1 273 1 is_stmt 1 view -0
+ 148              		.cfi_startproc
+ 149              		@ args = 0, pretend = 0, frame = 0
+ 150              		@ frame_needed = 0, uses_anonymous_args = 0
+ 151              		.loc 1 273 1 is_stmt 0 view .LVU17
+ 152 0000 08B5     		push	{r3, lr}
+ 153              		.cfi_def_cfa_offset 8
+ 154              		.cfi_offset 3, -8
+ 155              		.cfi_offset 14, -4
+ 156 0002 0A46     		mov	r2, r1
+ 274:Core/Src/MCP2515.c ****   HAL_SPI_Receive(SPI_CAN, buffer, length, SPI_TIMEOUT);
+ 157              		.loc 1 274 3 is_stmt 1 view .LVU18
+ 158 0004 0A23     		movs	r3, #10
+ 159 0006 0146     		mov	r1, r0
+ 160              	.LVL9:
+ 161              		.loc 1 274 3 is_stmt 0 view .LVU19
+ 162 0008 0148     		ldr	r0, .L15
+ 163              	.LVL10:
+ 164              		.loc 1 274 3 view .LVU20
+ 165 000a FFF7FEFF 		bl	HAL_SPI_Receive
+ 166              	.LVL11:
+ 275:Core/Src/MCP2515.c **** }
+ 167              		.loc 1 275 1 view .LVU21
+ 168 000e 08BD     		pop	{r3, pc}
+ 169              	.L16:
+ 170              		.align	2
+ 171              	.L15:
+ 172 0010 00000000 		.word	hspi1
+ 173              		.cfi_endproc
+ 174              	.LFE152:
+ 176              		.section	.text.MCP2515_Initialize,"ax",%progbits
+ 177              		.align	1
+ 178              		.global	MCP2515_Initialize
+ 179              		.syntax unified
+ 180              		.thumb
+ 181              		.thumb_func
+ 183              	MCP2515_Initialize:
+ 184              	.LFB134:
+  40:Core/Src/MCP2515.c ****   MCP2515_CS_HIGH();    
+ 185              		.loc 1 40 1 is_stmt 1 view -0
+ 186              		.cfi_startproc
+ 187              		@ args = 0, pretend = 0, frame = 0
+ 188              		@ frame_needed = 0, uses_anonymous_args = 0
+ 189 0000 10B5     		push	{r4, lr}
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 9
+
+
+ 190              		.cfi_def_cfa_offset 8
+ 191              		.cfi_offset 4, -8
+ 192              		.cfi_offset 14, -4
+  41:Core/Src/MCP2515.c ****   
+ 193              		.loc 1 41 3 view .LVU23
+ 194 0002 0122     		movs	r2, #1
+ 195 0004 1021     		movs	r1, #16
+ 196 0006 0848     		ldr	r0, .L22
+ 197 0008 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 198              	.LVL12:
+  43:Core/Src/MCP2515.c ****   
+ 199              		.loc 1 43 3 view .LVU24
+  43:Core/Src/MCP2515.c ****   
+ 200              		.loc 1 43 11 is_stmt 0 view .LVU25
+ 201 000c 0A24     		movs	r4, #10
+ 202              	.LVL13:
+ 203              	.L19:
+  45:Core/Src/MCP2515.c ****     /* check SPI Ready */
+ 204              		.loc 1 45 3 is_stmt 1 view .LVU26
+  47:Core/Src/MCP2515.c ****       return true;
+ 205              		.loc 1 47 5 view .LVU27
+  47:Core/Src/MCP2515.c ****       return true;
+ 206              		.loc 1 47 8 is_stmt 0 view .LVU28
+ 207 000e 0748     		ldr	r0, .L22+4
+ 208 0010 FFF7FEFF 		bl	HAL_SPI_GetState
+ 209              	.LVL14:
+  47:Core/Src/MCP2515.c ****       return true;
+ 210              		.loc 1 47 7 discriminator 1 view .LVU29
+ 211 0014 0128     		cmp	r0, #1
+ 212 0016 05D0     		beq	.L20
+  50:Core/Src/MCP2515.c ****   } while(loop > 0); 
+ 213              		.loc 1 50 5 is_stmt 1 view .LVU30
+  50:Core/Src/MCP2515.c ****   } while(loop > 0); 
+ 214              		.loc 1 50 9 is_stmt 0 view .LVU31
+ 215 0018 631E     		subs	r3, r4, #1
+ 216              	.LVL15:
+  51:Core/Src/MCP2515.c ****       
+ 217              		.loc 1 51 16 is_stmt 1 view .LVU32
+ 218 001a 13F0FF04 		ands	r4, r3, #255
+ 219 001e F6D1     		bne	.L19
+  53:Core/Src/MCP2515.c **** }
+ 220              		.loc 1 53 10 is_stmt 0 view .LVU33
+ 221 0020 0020     		movs	r0, #0
+ 222              	.LVL16:
+ 223              	.L18:
+  54:Core/Src/MCP2515.c **** 
+ 224              		.loc 1 54 1 view .LVU34
+ 225 0022 10BD     		pop	{r4, pc}
+ 226              	.LVL17:
+ 227              	.L20:
+  48:Core/Src/MCP2515.c ****     
+ 228              		.loc 1 48 14 view .LVU35
+ 229 0024 0120     		movs	r0, #1
+ 230 0026 FCE7     		b	.L18
+ 231              	.L23:
+ 232              		.align	2
+ 233              	.L22:
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 10
+
+
+ 234 0028 00000240 		.word	1073872896
+ 235 002c 00000000 		.word	hspi1
+ 236              		.cfi_endproc
+ 237              	.LFE134:
+ 239              		.section	.text.MCP2515_Reset,"ax",%progbits
+ 240              		.align	1
+ 241              		.global	MCP2515_Reset
+ 242              		.syntax unified
+ 243              		.thumb
+ 244              		.thumb_func
+ 246              	MCP2515_Reset:
+ 247              	.LFB138:
+ 115:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 248              		.loc 1 115 1 is_stmt 1 view -0
+ 249              		.cfi_startproc
+ 250              		@ args = 0, pretend = 0, frame = 0
+ 251              		@ frame_needed = 0, uses_anonymous_args = 0
+ 252 0000 10B5     		push	{r4, lr}
+ 253              		.cfi_def_cfa_offset 8
+ 254              		.cfi_offset 4, -8
+ 255              		.cfi_offset 14, -4
+ 116:Core/Src/MCP2515.c ****       
+ 256              		.loc 1 116 3 view .LVU37
+ 257 0002 074C     		ldr	r4, .L26
+ 258 0004 0022     		movs	r2, #0
+ 259 0006 1021     		movs	r1, #16
+ 260 0008 2046     		mov	r0, r4
+ 261 000a FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 262              	.LVL18:
+ 118:Core/Src/MCP2515.c ****       
+ 263              		.loc 1 118 3 view .LVU38
+ 264 000e C020     		movs	r0, #192
+ 265 0010 FFF7FEFF 		bl	SPI_Tx
+ 266              	.LVL19:
+ 120:Core/Src/MCP2515.c **** }
+ 267              		.loc 1 120 3 view .LVU39
+ 268 0014 0122     		movs	r2, #1
+ 269 0016 1021     		movs	r1, #16
+ 270 0018 2046     		mov	r0, r4
+ 271 001a FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 272              	.LVL20:
+ 121:Core/Src/MCP2515.c **** 
+ 273              		.loc 1 121 1 is_stmt 0 view .LVU40
+ 274 001e 10BD     		pop	{r4, pc}
+ 275              	.L27:
+ 276              		.align	2
+ 277              	.L26:
+ 278 0020 00000240 		.word	1073872896
+ 279              		.cfi_endproc
+ 280              	.LFE138:
+ 282              		.section	.text.MCP2515_ReadByte,"ax",%progbits
+ 283              		.align	1
+ 284              		.global	MCP2515_ReadByte
+ 285              		.syntax unified
+ 286              		.thumb
+ 287              		.thumb_func
+ 289              	MCP2515_ReadByte:
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 11
+
+
+ 290              	.LVL21:
+ 291              	.LFB139:
+ 125:Core/Src/MCP2515.c ****   uint8_t retVal;
+ 292              		.loc 1 125 1 is_stmt 1 view -0
+ 293              		.cfi_startproc
+ 294              		@ args = 0, pretend = 0, frame = 0
+ 295              		@ frame_needed = 0, uses_anonymous_args = 0
+ 125:Core/Src/MCP2515.c ****   uint8_t retVal;
+ 296              		.loc 1 125 1 is_stmt 0 view .LVU42
+ 297 0000 38B5     		push	{r3, r4, r5, lr}
+ 298              		.cfi_def_cfa_offset 16
+ 299              		.cfi_offset 3, -16
+ 300              		.cfi_offset 4, -12
+ 301              		.cfi_offset 5, -8
+ 302              		.cfi_offset 14, -4
+ 303 0002 0446     		mov	r4, r0
+ 126:Core/Src/MCP2515.c ****   
+ 304              		.loc 1 126 3 is_stmt 1 view .LVU43
+ 128:Core/Src/MCP2515.c ****   
+ 305              		.loc 1 128 3 view .LVU44
+ 306 0004 0A4D     		ldr	r5, .L30
+ 307 0006 0022     		movs	r2, #0
+ 308 0008 1021     		movs	r1, #16
+ 309 000a 2846     		mov	r0, r5
+ 310              	.LVL22:
+ 128:Core/Src/MCP2515.c ****   
+ 311              		.loc 1 128 3 is_stmt 0 view .LVU45
+ 312 000c FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 313              	.LVL23:
+ 130:Core/Src/MCP2515.c ****   SPI_Tx(address);
+ 314              		.loc 1 130 3 is_stmt 1 view .LVU46
+ 315 0010 0320     		movs	r0, #3
+ 316 0012 FFF7FEFF 		bl	SPI_Tx
+ 317              	.LVL24:
+ 131:Core/Src/MCP2515.c ****   retVal = SPI_Rx();
+ 318              		.loc 1 131 3 view .LVU47
+ 319 0016 2046     		mov	r0, r4
+ 320 0018 FFF7FEFF 		bl	SPI_Tx
+ 321              	.LVL25:
+ 132:Core/Src/MCP2515.c ****       
+ 322              		.loc 1 132 3 view .LVU48
+ 132:Core/Src/MCP2515.c ****       
+ 323              		.loc 1 132 12 is_stmt 0 view .LVU49
+ 324 001c FFF7FEFF 		bl	SPI_Rx
+ 325              	.LVL26:
+ 326 0020 0446     		mov	r4, r0
+ 327              	.LVL27:
+ 134:Core/Src/MCP2515.c ****   
+ 328              		.loc 1 134 3 is_stmt 1 view .LVU50
+ 329 0022 0122     		movs	r2, #1
+ 330 0024 1021     		movs	r1, #16
+ 331 0026 2846     		mov	r0, r5
+ 332 0028 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 333              	.LVL28:
+ 136:Core/Src/MCP2515.c **** }
+ 334              		.loc 1 136 3 view .LVU51
+ 137:Core/Src/MCP2515.c **** 
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 12
+
+
+ 335              		.loc 1 137 1 is_stmt 0 view .LVU52
+ 336 002c 2046     		mov	r0, r4
+ 337 002e 38BD     		pop	{r3, r4, r5, pc}
+ 338              	.LVL29:
+ 339              	.L31:
+ 137:Core/Src/MCP2515.c **** 
+ 340              		.loc 1 137 1 view .LVU53
+ 341              		.align	2
+ 342              	.L30:
+ 343 0030 00000240 		.word	1073872896
+ 344              		.cfi_endproc
+ 345              	.LFE139:
+ 347              		.section	.text.MCP2515_ReadRxSequence,"ax",%progbits
+ 348              		.align	1
+ 349              		.global	MCP2515_ReadRxSequence
+ 350              		.syntax unified
+ 351              		.thumb
+ 352              		.thumb_func
+ 354              	MCP2515_ReadRxSequence:
+ 355              	.LVL30:
+ 356              	.LFB140:
+ 141:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 357              		.loc 1 141 1 is_stmt 1 view -0
+ 358              		.cfi_startproc
+ 359              		@ args = 0, pretend = 0, frame = 0
+ 360              		@ frame_needed = 0, uses_anonymous_args = 0
+ 141:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 361              		.loc 1 141 1 is_stmt 0 view .LVU55
+ 362 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 363              		.cfi_def_cfa_offset 24
+ 364              		.cfi_offset 3, -24
+ 365              		.cfi_offset 4, -20
+ 366              		.cfi_offset 5, -16
+ 367              		.cfi_offset 6, -12
+ 368              		.cfi_offset 7, -8
+ 369              		.cfi_offset 14, -4
+ 370 0002 0646     		mov	r6, r0
+ 371 0004 0C46     		mov	r4, r1
+ 372 0006 1546     		mov	r5, r2
+ 142:Core/Src/MCP2515.c ****   
+ 373              		.loc 1 142 3 is_stmt 1 view .LVU56
+ 374 0008 094F     		ldr	r7, .L34
+ 375 000a 0022     		movs	r2, #0
+ 376              	.LVL31:
+ 142:Core/Src/MCP2515.c ****   
+ 377              		.loc 1 142 3 is_stmt 0 view .LVU57
+ 378 000c 1021     		movs	r1, #16
+ 379              	.LVL32:
+ 142:Core/Src/MCP2515.c ****   
+ 380              		.loc 1 142 3 view .LVU58
+ 381 000e 3846     		mov	r0, r7
+ 382              	.LVL33:
+ 142:Core/Src/MCP2515.c ****   
+ 383              		.loc 1 142 3 view .LVU59
+ 384 0010 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 385              	.LVL34:
+ 144:Core/Src/MCP2515.c ****   SPI_RxBuffer(data, length);
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 13
+
+
+ 386              		.loc 1 144 3 is_stmt 1 view .LVU60
+ 387 0014 3046     		mov	r0, r6
+ 388 0016 FFF7FEFF 		bl	SPI_Tx
+ 389              	.LVL35:
+ 145:Core/Src/MCP2515.c ****     
+ 390              		.loc 1 145 3 view .LVU61
+ 391 001a 2946     		mov	r1, r5
+ 392 001c 2046     		mov	r0, r4
+ 393 001e FFF7FEFF 		bl	SPI_RxBuffer
+ 394              	.LVL36:
+ 147:Core/Src/MCP2515.c **** }
+ 395              		.loc 1 147 3 view .LVU62
+ 396 0022 0122     		movs	r2, #1
+ 397 0024 1021     		movs	r1, #16
+ 398 0026 3846     		mov	r0, r7
+ 399 0028 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 400              	.LVL37:
+ 148:Core/Src/MCP2515.c **** 
+ 401              		.loc 1 148 1 is_stmt 0 view .LVU63
+ 402 002c F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 403              	.LVL38:
+ 404              	.L35:
+ 148:Core/Src/MCP2515.c **** 
+ 405              		.loc 1 148 1 view .LVU64
+ 406 002e 00BF     		.align	2
+ 407              	.L34:
+ 408 0030 00000240 		.word	1073872896
+ 409              		.cfi_endproc
+ 410              	.LFE140:
+ 412              		.section	.text.MCP2515_WriteByte,"ax",%progbits
+ 413              		.align	1
+ 414              		.global	MCP2515_WriteByte
+ 415              		.syntax unified
+ 416              		.thumb
+ 417              		.thumb_func
+ 419              	MCP2515_WriteByte:
+ 420              	.LVL39:
+ 421              	.LFB141:
+ 152:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();  
+ 422              		.loc 1 152 1 is_stmt 1 view -0
+ 423              		.cfi_startproc
+ 424              		@ args = 0, pretend = 0, frame = 0
+ 425              		@ frame_needed = 0, uses_anonymous_args = 0
+ 152:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();  
+ 426              		.loc 1 152 1 is_stmt 0 view .LVU66
+ 427 0000 70B5     		push	{r4, r5, r6, lr}
+ 428              		.cfi_def_cfa_offset 16
+ 429              		.cfi_offset 4, -16
+ 430              		.cfi_offset 5, -12
+ 431              		.cfi_offset 6, -8
+ 432              		.cfi_offset 14, -4
+ 433 0002 0546     		mov	r5, r0
+ 434 0004 0C46     		mov	r4, r1
+ 153:Core/Src/MCP2515.c ****   
+ 435              		.loc 1 153 3 is_stmt 1 view .LVU67
+ 436 0006 0A4E     		ldr	r6, .L38
+ 437 0008 0022     		movs	r2, #0
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 14
+
+
+ 438 000a 1021     		movs	r1, #16
+ 439              	.LVL40:
+ 153:Core/Src/MCP2515.c ****   
+ 440              		.loc 1 153 3 is_stmt 0 view .LVU68
+ 441 000c 3046     		mov	r0, r6
+ 442              	.LVL41:
+ 153:Core/Src/MCP2515.c ****   
+ 443              		.loc 1 153 3 view .LVU69
+ 444 000e FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 445              	.LVL42:
+ 155:Core/Src/MCP2515.c ****   SPI_Tx(address);
+ 446              		.loc 1 155 3 is_stmt 1 view .LVU70
+ 447 0012 0220     		movs	r0, #2
+ 448 0014 FFF7FEFF 		bl	SPI_Tx
+ 449              	.LVL43:
+ 156:Core/Src/MCP2515.c ****   SPI_Tx(data);  
+ 450              		.loc 1 156 3 view .LVU71
+ 451 0018 2846     		mov	r0, r5
+ 452 001a FFF7FEFF 		bl	SPI_Tx
+ 453              	.LVL44:
+ 157:Core/Src/MCP2515.c ****     
+ 454              		.loc 1 157 3 view .LVU72
+ 455 001e 2046     		mov	r0, r4
+ 456 0020 FFF7FEFF 		bl	SPI_Tx
+ 457              	.LVL45:
+ 159:Core/Src/MCP2515.c **** }
+ 458              		.loc 1 159 3 view .LVU73
+ 459 0024 0122     		movs	r2, #1
+ 460 0026 1021     		movs	r1, #16
+ 461 0028 3046     		mov	r0, r6
+ 462 002a FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 463              	.LVL46:
+ 160:Core/Src/MCP2515.c **** 
+ 464              		.loc 1 160 1 is_stmt 0 view .LVU74
+ 465 002e 70BD     		pop	{r4, r5, r6, pc}
+ 466              	.LVL47:
+ 467              	.L39:
+ 160:Core/Src/MCP2515.c **** 
+ 468              		.loc 1 160 1 view .LVU75
+ 469              		.align	2
+ 470              	.L38:
+ 471 0030 00000240 		.word	1073872896
+ 472              		.cfi_endproc
+ 473              	.LFE141:
+ 475              		.section	.text.MCP2515_SetConfigMode,"ax",%progbits
+ 476              		.align	1
+ 477              		.global	MCP2515_SetConfigMode
+ 478              		.syntax unified
+ 479              		.thumb
+ 480              		.thumb_func
+ 482              	MCP2515_SetConfigMode:
+ 483              	.LFB135:
+  58:Core/Src/MCP2515.c ****   /* configure CANCTRL Register */
+ 484              		.loc 1 58 1 is_stmt 1 view -0
+ 485              		.cfi_startproc
+ 486              		@ args = 0, pretend = 0, frame = 0
+ 487              		@ frame_needed = 0, uses_anonymous_args = 0
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 15
+
+
+ 488 0000 10B5     		push	{r4, lr}
+ 489              		.cfi_def_cfa_offset 8
+ 490              		.cfi_offset 4, -8
+ 491              		.cfi_offset 14, -4
+  60:Core/Src/MCP2515.c ****   
+ 492              		.loc 1 60 3 view .LVU77
+ 493 0002 8021     		movs	r1, #128
+ 494 0004 0F20     		movs	r0, #15
+ 495 0006 FFF7FEFF 		bl	MCP2515_WriteByte
+ 496              	.LVL48:
+  62:Core/Src/MCP2515.c ****   
+ 497              		.loc 1 62 3 view .LVU78
+  62:Core/Src/MCP2515.c ****   
+ 498              		.loc 1 62 11 is_stmt 0 view .LVU79
+ 499 000a 0A24     		movs	r4, #10
+ 500              	.LVL49:
+ 501              	.L42:
+  64:Core/Src/MCP2515.c ****     /* confirm mode configuration */
+ 502              		.loc 1 64 3 is_stmt 1 view .LVU80
+  66:Core/Src/MCP2515.c ****       return true;
+ 503              		.loc 1 66 5 view .LVU81
+  66:Core/Src/MCP2515.c ****       return true;
+ 504              		.loc 1 66 9 is_stmt 0 view .LVU82
+ 505 000c 0E20     		movs	r0, #14
+ 506 000e FFF7FEFF 		bl	MCP2515_ReadByte
+ 507              	.LVL50:
+  66:Core/Src/MCP2515.c ****       return true;
+ 508              		.loc 1 66 7 discriminator 1 view .LVU83
+ 509 0012 00F0E000 		and	r0, r0, #224
+ 510 0016 8028     		cmp	r0, #128
+ 511 0018 05D0     		beq	.L43
+  69:Core/Src/MCP2515.c ****   } while(loop > 0); 
+ 512              		.loc 1 69 5 is_stmt 1 view .LVU84
+  69:Core/Src/MCP2515.c ****   } while(loop > 0); 
+ 513              		.loc 1 69 9 is_stmt 0 view .LVU85
+ 514 001a 631E     		subs	r3, r4, #1
+ 515              	.LVL51:
+  70:Core/Src/MCP2515.c ****   
+ 516              		.loc 1 70 16 is_stmt 1 view .LVU86
+ 517 001c 13F0FF04 		ands	r4, r3, #255
+ 518 0020 F4D1     		bne	.L42
+  72:Core/Src/MCP2515.c **** }
+ 519              		.loc 1 72 10 is_stmt 0 view .LVU87
+ 520 0022 0020     		movs	r0, #0
+ 521              	.LVL52:
+ 522              	.L41:
+  73:Core/Src/MCP2515.c **** 
+ 523              		.loc 1 73 1 view .LVU88
+ 524 0024 10BD     		pop	{r4, pc}
+ 525              	.LVL53:
+ 526              	.L43:
+  67:Core/Src/MCP2515.c ****     
+ 527              		.loc 1 67 14 view .LVU89
+ 528 0026 0120     		movs	r0, #1
+ 529 0028 FCE7     		b	.L41
+ 530              		.cfi_endproc
+ 531              	.LFE135:
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 16
+
+
+ 533              		.section	.text.MCP2515_SetNormalMode,"ax",%progbits
+ 534              		.align	1
+ 535              		.global	MCP2515_SetNormalMode
+ 536              		.syntax unified
+ 537              		.thumb
+ 538              		.thumb_func
+ 540              	MCP2515_SetNormalMode:
+ 541              	.LFB136:
+  77:Core/Src/MCP2515.c ****   /* configure CANCTRL Register */
+ 542              		.loc 1 77 1 is_stmt 1 view -0
+ 543              		.cfi_startproc
+ 544              		@ args = 0, pretend = 0, frame = 0
+ 545              		@ frame_needed = 0, uses_anonymous_args = 0
+ 546 0000 10B5     		push	{r4, lr}
+ 547              		.cfi_def_cfa_offset 8
+ 548              		.cfi_offset 4, -8
+ 549              		.cfi_offset 14, -4
+  79:Core/Src/MCP2515.c ****   
+ 550              		.loc 1 79 3 view .LVU91
+ 551 0002 0021     		movs	r1, #0
+ 552 0004 0F20     		movs	r0, #15
+ 553 0006 FFF7FEFF 		bl	MCP2515_WriteByte
+ 554              	.LVL54:
+  81:Core/Src/MCP2515.c ****   
+ 555              		.loc 1 81 3 view .LVU92
+  81:Core/Src/MCP2515.c ****   
+ 556              		.loc 1 81 11 is_stmt 0 view .LVU93
+ 557 000a 0A24     		movs	r4, #10
+ 558              	.LVL55:
+ 559              	.L47:
+  83:Core/Src/MCP2515.c ****     /* confirm mode configuration */
+ 560              		.loc 1 83 3 is_stmt 1 view .LVU94
+  85:Core/Src/MCP2515.c ****       return true;
+ 561              		.loc 1 85 5 view .LVU95
+  85:Core/Src/MCP2515.c ****       return true;
+ 562              		.loc 1 85 9 is_stmt 0 view .LVU96
+ 563 000c 0E20     		movs	r0, #14
+ 564 000e FFF7FEFF 		bl	MCP2515_ReadByte
+ 565              	.LVL56:
+  85:Core/Src/MCP2515.c ****       return true;
+ 566              		.loc 1 85 7 discriminator 1 view .LVU97
+ 567 0012 1F28     		cmp	r0, #31
+ 568 0014 05D9     		bls	.L48
+  88:Core/Src/MCP2515.c ****   } while(loop > 0);
+ 569              		.loc 1 88 5 is_stmt 1 view .LVU98
+  88:Core/Src/MCP2515.c ****   } while(loop > 0);
+ 570              		.loc 1 88 9 is_stmt 0 view .LVU99
+ 571 0016 631E     		subs	r3, r4, #1
+ 572              	.LVL57:
+  89:Core/Src/MCP2515.c ****   
+ 573              		.loc 1 89 16 is_stmt 1 view .LVU100
+ 574 0018 13F0FF04 		ands	r4, r3, #255
+ 575 001c F6D1     		bne	.L47
+  91:Core/Src/MCP2515.c **** }
+ 576              		.loc 1 91 10 is_stmt 0 view .LVU101
+ 577 001e 0020     		movs	r0, #0
+ 578              	.LVL58:
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 17
+
+
+ 579              	.L46:
+  92:Core/Src/MCP2515.c **** 
+ 580              		.loc 1 92 1 view .LVU102
+ 581 0020 10BD     		pop	{r4, pc}
+ 582              	.LVL59:
+ 583              	.L48:
+  86:Core/Src/MCP2515.c ****     
+ 584              		.loc 1 86 14 view .LVU103
+ 585 0022 0120     		movs	r0, #1
+ 586 0024 FCE7     		b	.L46
+ 587              		.cfi_endproc
+ 588              	.LFE136:
+ 590              		.section	.text.MCP2515_SetSleepMode,"ax",%progbits
+ 591              		.align	1
+ 592              		.global	MCP2515_SetSleepMode
+ 593              		.syntax unified
+ 594              		.thumb
+ 595              		.thumb_func
+ 597              	MCP2515_SetSleepMode:
+ 598              	.LFB137:
+  96:Core/Src/MCP2515.c ****   /* configure CANCTRL Register */
+ 599              		.loc 1 96 1 is_stmt 1 view -0
+ 600              		.cfi_startproc
+ 601              		@ args = 0, pretend = 0, frame = 0
+ 602              		@ frame_needed = 0, uses_anonymous_args = 0
+ 603 0000 10B5     		push	{r4, lr}
+ 604              		.cfi_def_cfa_offset 8
+ 605              		.cfi_offset 4, -8
+ 606              		.cfi_offset 14, -4
+  98:Core/Src/MCP2515.c ****   
+ 607              		.loc 1 98 3 view .LVU105
+ 608 0002 2021     		movs	r1, #32
+ 609 0004 0F20     		movs	r0, #15
+ 610 0006 FFF7FEFF 		bl	MCP2515_WriteByte
+ 611              	.LVL60:
+ 100:Core/Src/MCP2515.c ****   
+ 612              		.loc 1 100 3 view .LVU106
+ 100:Core/Src/MCP2515.c ****   
+ 613              		.loc 1 100 11 is_stmt 0 view .LVU107
+ 614 000a 0A24     		movs	r4, #10
+ 615              	.LVL61:
+ 616              	.L52:
+ 102:Core/Src/MCP2515.c ****     /* confirm mode configuration */
+ 617              		.loc 1 102 3 is_stmt 1 view .LVU108
+ 104:Core/Src/MCP2515.c ****       return true;
+ 618              		.loc 1 104 5 view .LVU109
+ 104:Core/Src/MCP2515.c ****       return true;
+ 619              		.loc 1 104 9 is_stmt 0 view .LVU110
+ 620 000c 0E20     		movs	r0, #14
+ 621 000e FFF7FEFF 		bl	MCP2515_ReadByte
+ 622              	.LVL62:
+ 104:Core/Src/MCP2515.c ****       return true;
+ 623              		.loc 1 104 7 discriminator 1 view .LVU111
+ 624 0012 00F0E000 		and	r0, r0, #224
+ 625 0016 2028     		cmp	r0, #32
+ 626 0018 05D0     		beq	.L53
+ 107:Core/Src/MCP2515.c ****   } while(loop > 0);
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 18
+
+
+ 627              		.loc 1 107 5 is_stmt 1 view .LVU112
+ 107:Core/Src/MCP2515.c ****   } while(loop > 0);
+ 628              		.loc 1 107 9 is_stmt 0 view .LVU113
+ 629 001a 631E     		subs	r3, r4, #1
+ 630              	.LVL63:
+ 108:Core/Src/MCP2515.c ****   
+ 631              		.loc 1 108 16 is_stmt 1 view .LVU114
+ 632 001c 13F0FF04 		ands	r4, r3, #255
+ 633 0020 F4D1     		bne	.L52
+ 110:Core/Src/MCP2515.c **** }
+ 634              		.loc 1 110 10 is_stmt 0 view .LVU115
+ 635 0022 0020     		movs	r0, #0
+ 636              	.LVL64:
+ 637              	.L51:
+ 111:Core/Src/MCP2515.c **** 
+ 638              		.loc 1 111 1 view .LVU116
+ 639 0024 10BD     		pop	{r4, pc}
+ 640              	.LVL65:
+ 641              	.L53:
+ 105:Core/Src/MCP2515.c ****     
+ 642              		.loc 1 105 14 view .LVU117
+ 643 0026 0120     		movs	r0, #1
+ 644 0028 FCE7     		b	.L51
+ 645              		.cfi_endproc
+ 646              	.LFE137:
+ 648              		.section	.text.MCP2515_WriteByteSequence,"ax",%progbits
+ 649              		.align	1
+ 650              		.global	MCP2515_WriteByteSequence
+ 651              		.syntax unified
+ 652              		.thumb
+ 653              		.thumb_func
+ 655              	MCP2515_WriteByteSequence:
+ 656              	.LVL66:
+ 657              	.LFB142:
+ 164:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 658              		.loc 1 164 1 is_stmt 1 view -0
+ 659              		.cfi_startproc
+ 660              		@ args = 0, pretend = 0, frame = 0
+ 661              		@ frame_needed = 0, uses_anonymous_args = 0
+ 164:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 662              		.loc 1 164 1 is_stmt 0 view .LVU119
+ 663 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 664              		.cfi_def_cfa_offset 24
+ 665              		.cfi_offset 3, -24
+ 666              		.cfi_offset 4, -20
+ 667              		.cfi_offset 5, -16
+ 668              		.cfi_offset 6, -12
+ 669              		.cfi_offset 7, -8
+ 670              		.cfi_offset 14, -4
+ 671 0002 0546     		mov	r5, r0
+ 672 0004 0C46     		mov	r4, r1
+ 673 0006 1646     		mov	r6, r2
+ 165:Core/Src/MCP2515.c ****   
+ 674              		.loc 1 165 3 is_stmt 1 view .LVU120
+ 675 0008 0C4F     		ldr	r7, .L57
+ 676 000a 0022     		movs	r2, #0
+ 677              	.LVL67:
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 19
+
+
+ 165:Core/Src/MCP2515.c ****   
+ 678              		.loc 1 165 3 is_stmt 0 view .LVU121
+ 679 000c 1021     		movs	r1, #16
+ 680              	.LVL68:
+ 165:Core/Src/MCP2515.c ****   
+ 681              		.loc 1 165 3 view .LVU122
+ 682 000e 3846     		mov	r0, r7
+ 683              	.LVL69:
+ 165:Core/Src/MCP2515.c ****   
+ 684              		.loc 1 165 3 view .LVU123
+ 685 0010 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 686              	.LVL70:
+ 167:Core/Src/MCP2515.c ****   SPI_Tx(startAddress);
+ 687              		.loc 1 167 3 is_stmt 1 view .LVU124
+ 688 0014 0220     		movs	r0, #2
+ 689 0016 FFF7FEFF 		bl	SPI_Tx
+ 690              	.LVL71:
+ 168:Core/Src/MCP2515.c ****   SPI_TxBuffer(data, (endAddress - startAddress + 1));
+ 691              		.loc 1 168 3 view .LVU125
+ 692 001a 2846     		mov	r0, r5
+ 693 001c FFF7FEFF 		bl	SPI_Tx
+ 694              	.LVL72:
+ 169:Core/Src/MCP2515.c ****   
+ 695              		.loc 1 169 3 view .LVU126
+ 169:Core/Src/MCP2515.c ****   
+ 696              		.loc 1 169 34 is_stmt 0 view .LVU127
+ 697 0020 611B     		subs	r1, r4, r5
+ 698 0022 C9B2     		uxtb	r1, r1
+ 169:Core/Src/MCP2515.c ****   
+ 699              		.loc 1 169 3 view .LVU128
+ 700 0024 0131     		adds	r1, r1, #1
+ 701 0026 C9B2     		uxtb	r1, r1
+ 702 0028 3046     		mov	r0, r6
+ 703 002a FFF7FEFF 		bl	SPI_TxBuffer
+ 704              	.LVL73:
+ 171:Core/Src/MCP2515.c **** }
+ 705              		.loc 1 171 3 is_stmt 1 view .LVU129
+ 706 002e 0122     		movs	r2, #1
+ 707 0030 1021     		movs	r1, #16
+ 708 0032 3846     		mov	r0, r7
+ 709 0034 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 710              	.LVL74:
+ 172:Core/Src/MCP2515.c **** 
+ 711              		.loc 1 172 1 is_stmt 0 view .LVU130
+ 712 0038 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 713              	.LVL75:
+ 714              	.L58:
+ 172:Core/Src/MCP2515.c **** 
+ 715              		.loc 1 172 1 view .LVU131
+ 716 003a 00BF     		.align	2
+ 717              	.L57:
+ 718 003c 00000240 		.word	1073872896
+ 719              		.cfi_endproc
+ 720              	.LFE142:
+ 722              		.section	.text.MCP2515_LoadTxSequence,"ax",%progbits
+ 723              		.align	1
+ 724              		.global	MCP2515_LoadTxSequence
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 20
+
+
+ 725              		.syntax unified
+ 726              		.thumb
+ 727              		.thumb_func
+ 729              	MCP2515_LoadTxSequence:
+ 730              	.LVL76:
+ 731              	.LFB143:
+ 176:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 732              		.loc 1 176 1 is_stmt 1 view -0
+ 733              		.cfi_startproc
+ 734              		@ args = 0, pretend = 0, frame = 0
+ 735              		@ frame_needed = 0, uses_anonymous_args = 0
+ 176:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 736              		.loc 1 176 1 is_stmt 0 view .LVU133
+ 737 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 738              		.cfi_def_cfa_offset 24
+ 739              		.cfi_offset 4, -24
+ 740              		.cfi_offset 5, -20
+ 741              		.cfi_offset 6, -16
+ 742              		.cfi_offset 7, -12
+ 743              		.cfi_offset 8, -8
+ 744              		.cfi_offset 14, -4
+ 745 0004 0746     		mov	r7, r0
+ 746 0006 0E46     		mov	r6, r1
+ 747 0008 1446     		mov	r4, r2
+ 748 000a 1D46     		mov	r5, r3
+ 177:Core/Src/MCP2515.c ****   
+ 749              		.loc 1 177 3 is_stmt 1 view .LVU134
+ 750 000c DFF83480 		ldr	r8, .L61
+ 751 0010 0022     		movs	r2, #0
+ 752              	.LVL77:
+ 177:Core/Src/MCP2515.c ****   
+ 753              		.loc 1 177 3 is_stmt 0 view .LVU135
+ 754 0012 1021     		movs	r1, #16
+ 755              	.LVL78:
+ 177:Core/Src/MCP2515.c ****   
+ 756              		.loc 1 177 3 view .LVU136
+ 757 0014 4046     		mov	r0, r8
+ 758              	.LVL79:
+ 177:Core/Src/MCP2515.c ****   
+ 759              		.loc 1 177 3 view .LVU137
+ 760 0016 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 761              	.LVL80:
+ 179:Core/Src/MCP2515.c ****   SPI_TxBuffer(idReg, 4);
+ 762              		.loc 1 179 3 is_stmt 1 view .LVU138
+ 763 001a 3846     		mov	r0, r7
+ 764 001c FFF7FEFF 		bl	SPI_Tx
+ 765              	.LVL81:
+ 180:Core/Src/MCP2515.c ****   SPI_Tx(dlc);
+ 766              		.loc 1 180 3 view .LVU139
+ 767 0020 0421     		movs	r1, #4
+ 768 0022 3046     		mov	r0, r6
+ 769 0024 FFF7FEFF 		bl	SPI_TxBuffer
+ 770              	.LVL82:
+ 181:Core/Src/MCP2515.c ****   SPI_TxBuffer(data, dlc);
+ 771              		.loc 1 181 3 view .LVU140
+ 772 0028 2046     		mov	r0, r4
+ 773 002a FFF7FEFF 		bl	SPI_Tx
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 21
+
+
+ 774              	.LVL83:
+ 182:Core/Src/MCP2515.c ****        
+ 775              		.loc 1 182 3 view .LVU141
+ 776 002e 2146     		mov	r1, r4
+ 777 0030 2846     		mov	r0, r5
+ 778 0032 FFF7FEFF 		bl	SPI_TxBuffer
+ 779              	.LVL84:
+ 184:Core/Src/MCP2515.c **** }
+ 780              		.loc 1 184 3 view .LVU142
+ 781 0036 0122     		movs	r2, #1
+ 782 0038 1021     		movs	r1, #16
+ 783 003a 4046     		mov	r0, r8
+ 784 003c FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 785              	.LVL85:
+ 185:Core/Src/MCP2515.c **** 
+ 786              		.loc 1 185 1 is_stmt 0 view .LVU143
+ 787 0040 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 788              	.LVL86:
+ 789              	.L62:
+ 185:Core/Src/MCP2515.c **** 
+ 790              		.loc 1 185 1 view .LVU144
+ 791              		.align	2
+ 792              	.L61:
+ 793 0044 00000240 		.word	1073872896
+ 794              		.cfi_endproc
+ 795              	.LFE143:
+ 797              		.section	.text.MCP2515_LoadTxBuffer,"ax",%progbits
+ 798              		.align	1
+ 799              		.global	MCP2515_LoadTxBuffer
+ 800              		.syntax unified
+ 801              		.thumb
+ 802              		.thumb_func
+ 804              	MCP2515_LoadTxBuffer:
+ 805              	.LVL87:
+ 806              	.LFB144:
+ 189:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 807              		.loc 1 189 1 is_stmt 1 view -0
+ 808              		.cfi_startproc
+ 809              		@ args = 0, pretend = 0, frame = 0
+ 810              		@ frame_needed = 0, uses_anonymous_args = 0
+ 189:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 811              		.loc 1 189 1 is_stmt 0 view .LVU146
+ 812 0000 70B5     		push	{r4, r5, r6, lr}
+ 813              		.cfi_def_cfa_offset 16
+ 814              		.cfi_offset 4, -16
+ 815              		.cfi_offset 5, -12
+ 816              		.cfi_offset 6, -8
+ 817              		.cfi_offset 14, -4
+ 818 0002 0546     		mov	r5, r0
+ 819 0004 0C46     		mov	r4, r1
+ 190:Core/Src/MCP2515.c ****   
+ 820              		.loc 1 190 3 is_stmt 1 view .LVU147
+ 821 0006 094E     		ldr	r6, .L65
+ 822 0008 0022     		movs	r2, #0
+ 823 000a 1021     		movs	r1, #16
+ 824              	.LVL88:
+ 190:Core/Src/MCP2515.c ****   
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 22
+
+
+ 825              		.loc 1 190 3 is_stmt 0 view .LVU148
+ 826 000c 3046     		mov	r0, r6
+ 827              	.LVL89:
+ 190:Core/Src/MCP2515.c ****   
+ 828              		.loc 1 190 3 view .LVU149
+ 829 000e FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 830              	.LVL90:
+ 192:Core/Src/MCP2515.c ****   SPI_Tx(data);
+ 831              		.loc 1 192 3 is_stmt 1 view .LVU150
+ 832 0012 2846     		mov	r0, r5
+ 833 0014 FFF7FEFF 		bl	SPI_Tx
+ 834              	.LVL91:
+ 193:Core/Src/MCP2515.c ****         
+ 835              		.loc 1 193 3 view .LVU151
+ 836 0018 2046     		mov	r0, r4
+ 837 001a FFF7FEFF 		bl	SPI_Tx
+ 838              	.LVL92:
+ 195:Core/Src/MCP2515.c **** }
+ 839              		.loc 1 195 3 view .LVU152
+ 840 001e 0122     		movs	r2, #1
+ 841 0020 1021     		movs	r1, #16
+ 842 0022 3046     		mov	r0, r6
+ 843 0024 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 844              	.LVL93:
+ 196:Core/Src/MCP2515.c **** 
+ 845              		.loc 1 196 1 is_stmt 0 view .LVU153
+ 846 0028 70BD     		pop	{r4, r5, r6, pc}
+ 847              	.LVL94:
+ 848              	.L66:
+ 196:Core/Src/MCP2515.c **** 
+ 849              		.loc 1 196 1 view .LVU154
+ 850 002a 00BF     		.align	2
+ 851              	.L65:
+ 852 002c 00000240 		.word	1073872896
+ 853              		.cfi_endproc
+ 854              	.LFE144:
+ 856              		.section	.text.MCP2515_RequestToSend,"ax",%progbits
+ 857              		.align	1
+ 858              		.global	MCP2515_RequestToSend
+ 859              		.syntax unified
+ 860              		.thumb
+ 861              		.thumb_func
+ 863              	MCP2515_RequestToSend:
+ 864              	.LVL95:
+ 865              	.LFB145:
+ 200:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 866              		.loc 1 200 1 is_stmt 1 view -0
+ 867              		.cfi_startproc
+ 868              		@ args = 0, pretend = 0, frame = 0
+ 869              		@ frame_needed = 0, uses_anonymous_args = 0
+ 200:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 870              		.loc 1 200 1 is_stmt 0 view .LVU156
+ 871 0000 38B5     		push	{r3, r4, r5, lr}
+ 872              		.cfi_def_cfa_offset 16
+ 873              		.cfi_offset 3, -16
+ 874              		.cfi_offset 4, -12
+ 875              		.cfi_offset 5, -8
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 23
+
+
+ 876              		.cfi_offset 14, -4
+ 877 0002 0446     		mov	r4, r0
+ 201:Core/Src/MCP2515.c ****   
+ 878              		.loc 1 201 3 is_stmt 1 view .LVU157
+ 879 0004 074D     		ldr	r5, .L69
+ 880 0006 0022     		movs	r2, #0
+ 881 0008 1021     		movs	r1, #16
+ 882 000a 2846     		mov	r0, r5
+ 883              	.LVL96:
+ 201:Core/Src/MCP2515.c ****   
+ 884              		.loc 1 201 3 is_stmt 0 view .LVU158
+ 885 000c FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 886              	.LVL97:
+ 203:Core/Src/MCP2515.c ****       
+ 887              		.loc 1 203 3 is_stmt 1 view .LVU159
+ 888 0010 2046     		mov	r0, r4
+ 889 0012 FFF7FEFF 		bl	SPI_Tx
+ 890              	.LVL98:
+ 205:Core/Src/MCP2515.c **** }
+ 891              		.loc 1 205 3 view .LVU160
+ 892 0016 0122     		movs	r2, #1
+ 893 0018 1021     		movs	r1, #16
+ 894 001a 2846     		mov	r0, r5
+ 895 001c FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 896              	.LVL99:
+ 206:Core/Src/MCP2515.c **** 
+ 897              		.loc 1 206 1 is_stmt 0 view .LVU161
+ 898 0020 38BD     		pop	{r3, r4, r5, pc}
+ 899              	.LVL100:
+ 900              	.L70:
+ 206:Core/Src/MCP2515.c **** 
+ 901              		.loc 1 206 1 view .LVU162
+ 902 0022 00BF     		.align	2
+ 903              	.L69:
+ 904 0024 00000240 		.word	1073872896
+ 905              		.cfi_endproc
+ 906              	.LFE145:
+ 908              		.section	.text.MCP2515_ReadStatus,"ax",%progbits
+ 909              		.align	1
+ 910              		.global	MCP2515_ReadStatus
+ 911              		.syntax unified
+ 912              		.thumb
+ 913              		.thumb_func
+ 915              	MCP2515_ReadStatus:
+ 916              	.LFB146:
+ 210:Core/Src/MCP2515.c ****   uint8_t retVal;
+ 917              		.loc 1 210 1 is_stmt 1 view -0
+ 918              		.cfi_startproc
+ 919              		@ args = 0, pretend = 0, frame = 0
+ 920              		@ frame_needed = 0, uses_anonymous_args = 0
+ 921 0000 38B5     		push	{r3, r4, r5, lr}
+ 922              		.cfi_def_cfa_offset 16
+ 923              		.cfi_offset 3, -16
+ 924              		.cfi_offset 4, -12
+ 925              		.cfi_offset 5, -8
+ 926              		.cfi_offset 14, -4
+ 211:Core/Src/MCP2515.c ****   
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 24
+
+
+ 927              		.loc 1 211 3 view .LVU164
+ 213:Core/Src/MCP2515.c ****   
+ 928              		.loc 1 213 3 view .LVU165
+ 929 0002 094D     		ldr	r5, .L73
+ 930 0004 0022     		movs	r2, #0
+ 931 0006 1021     		movs	r1, #16
+ 932 0008 2846     		mov	r0, r5
+ 933 000a FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 934              	.LVL101:
+ 215:Core/Src/MCP2515.c ****   retVal = SPI_Rx();
+ 935              		.loc 1 215 3 view .LVU166
+ 936 000e A020     		movs	r0, #160
+ 937 0010 FFF7FEFF 		bl	SPI_Tx
+ 938              	.LVL102:
+ 216:Core/Src/MCP2515.c ****         
+ 939              		.loc 1 216 3 view .LVU167
+ 216:Core/Src/MCP2515.c ****         
+ 940              		.loc 1 216 12 is_stmt 0 view .LVU168
+ 941 0014 FFF7FEFF 		bl	SPI_Rx
+ 942              	.LVL103:
+ 943 0018 0446     		mov	r4, r0
+ 944              	.LVL104:
+ 218:Core/Src/MCP2515.c ****   
+ 945              		.loc 1 218 3 is_stmt 1 view .LVU169
+ 946 001a 0122     		movs	r2, #1
+ 947 001c 1021     		movs	r1, #16
+ 948 001e 2846     		mov	r0, r5
+ 949 0020 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 950              	.LVL105:
+ 220:Core/Src/MCP2515.c **** }
+ 951              		.loc 1 220 3 view .LVU170
+ 221:Core/Src/MCP2515.c **** 
+ 952              		.loc 1 221 1 is_stmt 0 view .LVU171
+ 953 0024 2046     		mov	r0, r4
+ 954 0026 38BD     		pop	{r3, r4, r5, pc}
+ 955              	.LVL106:
+ 956              	.L74:
+ 221:Core/Src/MCP2515.c **** 
+ 957              		.loc 1 221 1 view .LVU172
+ 958              		.align	2
+ 959              	.L73:
+ 960 0028 00000240 		.word	1073872896
+ 961              		.cfi_endproc
+ 962              	.LFE146:
+ 964              		.section	.text.MCP2515_GetRxStatus,"ax",%progbits
+ 965              		.align	1
+ 966              		.global	MCP2515_GetRxStatus
+ 967              		.syntax unified
+ 968              		.thumb
+ 969              		.thumb_func
+ 971              	MCP2515_GetRxStatus:
+ 972              	.LFB147:
+ 225:Core/Src/MCP2515.c ****   uint8_t retVal;
+ 973              		.loc 1 225 1 is_stmt 1 view -0
+ 974              		.cfi_startproc
+ 975              		@ args = 0, pretend = 0, frame = 0
+ 976              		@ frame_needed = 0, uses_anonymous_args = 0
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 25
+
+
+ 977 0000 38B5     		push	{r3, r4, r5, lr}
+ 978              		.cfi_def_cfa_offset 16
+ 979              		.cfi_offset 3, -16
+ 980              		.cfi_offset 4, -12
+ 981              		.cfi_offset 5, -8
+ 982              		.cfi_offset 14, -4
+ 226:Core/Src/MCP2515.c ****   
+ 983              		.loc 1 226 3 view .LVU174
+ 228:Core/Src/MCP2515.c ****   
+ 984              		.loc 1 228 3 view .LVU175
+ 985 0002 094D     		ldr	r5, .L77
+ 986 0004 0022     		movs	r2, #0
+ 987 0006 1021     		movs	r1, #16
+ 988 0008 2846     		mov	r0, r5
+ 989 000a FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 990              	.LVL107:
+ 230:Core/Src/MCP2515.c ****   retVal = SPI_Rx();
+ 991              		.loc 1 230 3 view .LVU176
+ 992 000e B020     		movs	r0, #176
+ 993 0010 FFF7FEFF 		bl	SPI_Tx
+ 994              	.LVL108:
+ 231:Core/Src/MCP2515.c ****         
+ 995              		.loc 1 231 3 view .LVU177
+ 231:Core/Src/MCP2515.c ****         
+ 996              		.loc 1 231 12 is_stmt 0 view .LVU178
+ 997 0014 FFF7FEFF 		bl	SPI_Rx
+ 998              	.LVL109:
+ 999 0018 0446     		mov	r4, r0
+ 1000              	.LVL110:
+ 233:Core/Src/MCP2515.c ****   
+ 1001              		.loc 1 233 3 is_stmt 1 view .LVU179
+ 1002 001a 0122     		movs	r2, #1
+ 1003 001c 1021     		movs	r1, #16
+ 1004 001e 2846     		mov	r0, r5
+ 1005 0020 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 1006              	.LVL111:
+ 235:Core/Src/MCP2515.c **** }
+ 1007              		.loc 1 235 3 view .LVU180
+ 236:Core/Src/MCP2515.c **** 
+ 1008              		.loc 1 236 1 is_stmt 0 view .LVU181
+ 1009 0024 2046     		mov	r0, r4
+ 1010 0026 38BD     		pop	{r3, r4, r5, pc}
+ 1011              	.LVL112:
+ 1012              	.L78:
+ 236:Core/Src/MCP2515.c **** 
+ 1013              		.loc 1 236 1 view .LVU182
+ 1014              		.align	2
+ 1015              	.L77:
+ 1016 0028 00000240 		.word	1073872896
+ 1017              		.cfi_endproc
+ 1018              	.LFE147:
+ 1020              		.section	.text.MCP2515_BitModify,"ax",%progbits
+ 1021              		.align	1
+ 1022              		.global	MCP2515_BitModify
+ 1023              		.syntax unified
+ 1024              		.thumb
+ 1025              		.thumb_func
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 26
+
+
+ 1027              	MCP2515_BitModify:
+ 1028              	.LVL113:
+ 1029              	.LFB148:
+ 240:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 1030              		.loc 1 240 1 is_stmt 1 view -0
+ 1031              		.cfi_startproc
+ 1032              		@ args = 0, pretend = 0, frame = 0
+ 1033              		@ frame_needed = 0, uses_anonymous_args = 0
+ 240:Core/Src/MCP2515.c ****   MCP2515_CS_LOW();
+ 1034              		.loc 1 240 1 is_stmt 0 view .LVU184
+ 1035 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 1036              		.cfi_def_cfa_offset 24
+ 1037              		.cfi_offset 3, -24
+ 1038              		.cfi_offset 4, -20
+ 1039              		.cfi_offset 5, -16
+ 1040              		.cfi_offset 6, -12
+ 1041              		.cfi_offset 7, -8
+ 1042              		.cfi_offset 14, -4
+ 1043 0002 0646     		mov	r6, r0
+ 1044 0004 0D46     		mov	r5, r1
+ 1045 0006 1446     		mov	r4, r2
+ 241:Core/Src/MCP2515.c ****   
+ 1046              		.loc 1 241 3 is_stmt 1 view .LVU185
+ 1047 0008 0B4F     		ldr	r7, .L81
+ 1048 000a 0022     		movs	r2, #0
+ 1049              	.LVL114:
+ 241:Core/Src/MCP2515.c ****   
+ 1050              		.loc 1 241 3 is_stmt 0 view .LVU186
+ 1051 000c 1021     		movs	r1, #16
+ 1052              	.LVL115:
+ 241:Core/Src/MCP2515.c ****   
+ 1053              		.loc 1 241 3 view .LVU187
+ 1054 000e 3846     		mov	r0, r7
+ 1055              	.LVL116:
+ 241:Core/Src/MCP2515.c ****   
+ 1056              		.loc 1 241 3 view .LVU188
+ 1057 0010 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 1058              	.LVL117:
+ 243:Core/Src/MCP2515.c ****   SPI_Tx(address);
+ 1059              		.loc 1 243 3 is_stmt 1 view .LVU189
+ 1060 0014 0520     		movs	r0, #5
+ 1061 0016 FFF7FEFF 		bl	SPI_Tx
+ 1062              	.LVL118:
+ 244:Core/Src/MCP2515.c ****   SPI_Tx(mask);
+ 1063              		.loc 1 244 3 view .LVU190
+ 1064 001a 3046     		mov	r0, r6
+ 1065 001c FFF7FEFF 		bl	SPI_Tx
+ 1066              	.LVL119:
+ 245:Core/Src/MCP2515.c ****   SPI_Tx(data);
+ 1067              		.loc 1 245 3 view .LVU191
+ 1068 0020 2846     		mov	r0, r5
+ 1069 0022 FFF7FEFF 		bl	SPI_Tx
+ 1070              	.LVL120:
+ 246:Core/Src/MCP2515.c ****         
+ 1071              		.loc 1 246 3 view .LVU192
+ 1072 0026 2046     		mov	r0, r4
+ 1073 0028 FFF7FEFF 		bl	SPI_Tx
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 27
+
+
+ 1074              	.LVL121:
+ 248:Core/Src/MCP2515.c **** }
+ 1075              		.loc 1 248 3 view .LVU193
+ 1076 002c 0122     		movs	r2, #1
+ 1077 002e 1021     		movs	r1, #16
+ 1078 0030 3846     		mov	r0, r7
+ 1079 0032 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 1080              	.LVL122:
+ 249:Core/Src/MCP2515.c **** 
+ 1081              		.loc 1 249 1 is_stmt 0 view .LVU194
+ 1082 0036 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 1083              	.LVL123:
+ 1084              	.L82:
+ 249:Core/Src/MCP2515.c **** 
+ 1085              		.loc 1 249 1 view .LVU195
+ 1086              		.align	2
+ 1087              	.L81:
+ 1088 0038 00000240 		.word	1073872896
+ 1089              		.cfi_endproc
+ 1090              	.LFE148:
+ 1092              		.text
+ 1093              	.Letext0:
+ 1094              		.file 2 "C:/Users/Chronikle/AppData/Roaming/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-de
+ 1095              		.file 3 "C:/Users/Chronikle/AppData/Roaming/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-de
+ 1096              		.file 4 "Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f407xx.h"
+ 1097              		.file 5 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h"
+ 1098              		.file 6 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h"
+ 1099              		.file 7 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h"
+ 1100              		.file 8 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h"
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 28
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 MCP2515.c
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:21     .text.SPI_Tx:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:26     .text.SPI_Tx:00000000 SPI_Tx
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:57     .text.SPI_Tx:0000001c $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:62     .text.SPI_TxBuffer:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:67     .text.SPI_TxBuffer:00000000 SPI_TxBuffer
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:95     .text.SPI_TxBuffer:00000010 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:100    .text.SPI_Rx:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:105    .text.SPI_Rx:00000000 SPI_Rx
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:134    .text.SPI_Rx:0000001c $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:139    .text.SPI_RxBuffer:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:144    .text.SPI_RxBuffer:00000000 SPI_RxBuffer
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:172    .text.SPI_RxBuffer:00000010 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:177    .text.MCP2515_Initialize:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:183    .text.MCP2515_Initialize:00000000 MCP2515_Initialize
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:234    .text.MCP2515_Initialize:00000028 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:240    .text.MCP2515_Reset:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:246    .text.MCP2515_Reset:00000000 MCP2515_Reset
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:278    .text.MCP2515_Reset:00000020 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:283    .text.MCP2515_ReadByte:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:289    .text.MCP2515_ReadByte:00000000 MCP2515_ReadByte
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:343    .text.MCP2515_ReadByte:00000030 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:348    .text.MCP2515_ReadRxSequence:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:354    .text.MCP2515_ReadRxSequence:00000000 MCP2515_ReadRxSequence
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:408    .text.MCP2515_ReadRxSequence:00000030 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:413    .text.MCP2515_WriteByte:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:419    .text.MCP2515_WriteByte:00000000 MCP2515_WriteByte
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:471    .text.MCP2515_WriteByte:00000030 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:476    .text.MCP2515_SetConfigMode:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:482    .text.MCP2515_SetConfigMode:00000000 MCP2515_SetConfigMode
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:534    .text.MCP2515_SetNormalMode:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:540    .text.MCP2515_SetNormalMode:00000000 MCP2515_SetNormalMode
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:591    .text.MCP2515_SetSleepMode:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:597    .text.MCP2515_SetSleepMode:00000000 MCP2515_SetSleepMode
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:649    .text.MCP2515_WriteByteSequence:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:655    .text.MCP2515_WriteByteSequence:00000000 MCP2515_WriteByteSequence
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:718    .text.MCP2515_WriteByteSequence:0000003c $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:723    .text.MCP2515_LoadTxSequence:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:729    .text.MCP2515_LoadTxSequence:00000000 MCP2515_LoadTxSequence
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:793    .text.MCP2515_LoadTxSequence:00000044 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:798    .text.MCP2515_LoadTxBuffer:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:804    .text.MCP2515_LoadTxBuffer:00000000 MCP2515_LoadTxBuffer
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:852    .text.MCP2515_LoadTxBuffer:0000002c $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:857    .text.MCP2515_RequestToSend:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:863    .text.MCP2515_RequestToSend:00000000 MCP2515_RequestToSend
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:904    .text.MCP2515_RequestToSend:00000024 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:909    .text.MCP2515_ReadStatus:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:915    .text.MCP2515_ReadStatus:00000000 MCP2515_ReadStatus
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:960    .text.MCP2515_ReadStatus:00000028 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:965    .text.MCP2515_GetRxStatus:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:971    .text.MCP2515_GetRxStatus:00000000 MCP2515_GetRxStatus
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:1016   .text.MCP2515_GetRxStatus:00000028 $d
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:1021   .text.MCP2515_BitModify:00000000 $t
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:1027   .text.MCP2515_BitModify:00000000 MCP2515_BitModify
+C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s:1088   .text.MCP2515_BitModify:00000038 $d
+
+ARM GAS  C:\Users\CHRONI~1\AppData\Local\Temp\ccl63A7C.s 			page 29
+
+
+UNDEFINED SYMBOLS
+HAL_SPI_Transmit
+hspi1
+HAL_SPI_Receive
+HAL_GPIO_WritePin
+HAL_SPI_GetState
